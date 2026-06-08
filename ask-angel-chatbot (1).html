@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ask Angel — Brokerage Support</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --angel-red: #E8002A;
+    --angel-dark: #0A0A0F;
+    --angel-surface: #13131A;
+    --angel-border: #22222E;
+    --angel-muted: #3A3A4E;
+    --angel-text: #E8E8F0;
+    --angel-subtext: #7878A0;
+    --angel-accent: #FF3D5A;
+    --angel-gold: #FFB830;
+    --intent-fund: #FF6B35;
+    --intent-login: #4ECDC4;
+    --intent-order: #A855F7;
+    --intent-account: #22D3EE;
+    --intent-general: #86EFAC;
+    --tier-high: #4ade80;
+    --tier-mid: #FFB830;
+    --tier-low: #f87171;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--angel-dark);
+    color: var(--angel-text);
+    font-family: 'DM Sans', sans-serif;
+    height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .header {
+    background: var(--angel-surface);
+    border-bottom: 1px solid var(--angel-border);
+    padding: 14px 24px; display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+  }
+  .logo-mark {
+    width: 40px; height: 40px; background: var(--angel-red); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif; font-size: 20px; color: white; flex-shrink: 0;
+    box-shadow: 0 0 20px rgba(232,0,42,0.4);
+  }
+  .header-titles h1 { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--angel-text); line-height: 1.1; }
+  .header-titles span { font-size: 11px; color: var(--angel-subtext); font-family: 'DM Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; }
+  .status-pill {
+    margin-left: auto; display: flex; align-items: center; gap: 6px;
+    background: rgba(34,211,120,0.08); border: 1px solid rgba(34,211,120,0.2);
+    border-radius: 20px; padding: 4px 12px; font-size: 11px; color: #4ade80;
+    font-family: 'DM Mono', monospace;
+  }
+  .status-dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; animation: pulse-dot 2s infinite; }
+  @keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+  .chat-area {
+    flex: 1; overflow-y: auto; padding: 24px;
+    display: flex; flex-direction: column; gap: 16px;
+    scrollbar-width: thin; scrollbar-color: var(--angel-muted) transparent;
+  }
+  .chat-area::-webkit-scrollbar { width: 4px; }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--angel-muted); border-radius: 4px; }
+
+  .message { display: flex; gap: 10px; animation: slide-up 0.3s ease; max-width: 100%; }
+  @keyframes slide-up { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .message.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;
+  }
+  .avatar.bot { background: var(--angel-red); color: white; font-family: 'DM Serif Display', serif; box-shadow: 0 0 12px rgba(232,0,42,0.3); }
+  .avatar.user-av { background: var(--angel-muted); color: var(--angel-subtext); }
+
+  .bubble-wrap { display: flex; flex-direction: column; gap: 8px; max-width: calc(100% - 80px); }
+  .message.user .bubble-wrap { align-items: flex-end; }
+
+  .bubble { padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.65; }
+  .message.bot .bubble { background: var(--angel-surface); border: 1px solid var(--angel-border); border-radius: 14px 14px 14px 4px; }
+  .message.user .bubble { background: var(--angel-red); color: white; border-radius: 14px 14px 4px 14px; }
+
+  /* Intent Card */
+  .intent-card {
+    background: var(--angel-surface); border: 1px solid var(--angel-border);
+    border-radius: 12px; padding: 14px 16px; font-family: 'DM Mono', monospace; font-size: 12px;
+  }
+  .card-label { color: var(--angel-subtext); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+  .intent-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .intent-name { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 6px; letter-spacing: 0.04em; }
+  .intent-FUND_FAILURE   { background:rgba(255,107,53,0.12); color:var(--intent-fund);    border:1px solid rgba(255,107,53,0.25); }
+  .intent-LOGIN_ISSUE    { background:rgba(78,205,196,0.12);  color:var(--intent-login);   border:1px solid rgba(78,205,196,0.25); }
+  .intent-ORDER_REJECTION{ background:rgba(168,85,247,0.12);  color:var(--intent-order);   border:1px solid rgba(168,85,247,0.25); }
+  .intent-ACCOUNT_INFO   { background:rgba(34,211,238,0.12);  color:var(--intent-account); border:1px solid rgba(34,211,238,0.25); }
+  .intent-GENERAL_QUERY  { background:rgba(134,239,172,0.12); color:var(--intent-general); border:1px solid rgba(134,239,172,0.25); }
+
+  .confidence-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .conf-bar-bg { flex: 1; height: 4px; background: var(--angel-muted); border-radius: 2px; overflow: hidden; }
+  .conf-bar-fill { height: 100%; border-radius: 2px; transition: width 0.7s cubic-bezier(0.34,1.56,0.64,1); }
+  .conf-value { color: var(--angel-gold); font-size: 11px; min-width: 36px; text-align: right; }
+
+  .tier-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; padding: 3px 10px; border-radius: 6px;
+    font-weight: 600; letter-spacing: 0.06em; margin-bottom: 10px;
+  }
+  .tier-AUTO     { background:rgba(74,222,128,0.1);  color:var(--tier-high); border:1px solid rgba(74,222,128,0.2); }
+  .tier-CLARIFY  { background:rgba(255,184,48,0.1);  color:var(--tier-mid);  border:1px solid rgba(255,184,48,0.2); }
+  .tier-ESCALATE { background:rgba(248,113,113,0.1); color:var(--tier-low);  border:1px solid rgba(248,113,113,0.2); }
+  .tier-RESTRICT { background:rgba(34,211,238,0.08); color:#60a5fa;           border:1px solid rgba(34,211,238,0.2); }
+
+  .json-output {
+    background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px 12px;
+    font-size: 11px; color: #a0a0c0; border: 1px solid rgba(255,255,255,0.04);
+    white-space: pre; line-height: 1.6;
+  }
+
+  /* CTAs */
+  .cta-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 16px; border-radius: 10px; font-size: 13px;
+    font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer;
+    border: none; text-decoration: none; transition: all 0.2s; letter-spacing: 0.01em;
+  }
+  .cta-btn.primary { background: var(--angel-red); color: white; box-shadow: 0 4px 14px rgba(232,0,42,0.3); }
+  .cta-btn.primary:hover { background: var(--angel-accent); transform: translateY(-1px); }
+  .cta-btn.secondary { background: rgba(255,255,255,0.05); color: var(--angel-text); border: 1px solid var(--angel-border); }
+  .cta-btn.secondary:hover { background: rgba(255,255,255,0.09); transform: translateY(-1px); }
+  .cta-btn.warn { background: rgba(255,184,48,0.1); color: var(--angel-gold); border: 1px solid rgba(255,184,48,0.25); }
+  .cta-btn.info { background: rgba(34,211,238,0.08); color: #67e8f9; border: 1px solid rgba(34,211,238,0.2); }
+
+  /* Blocks */
+  .restriction-notice {
+    background: rgba(34,211,238,0.05); border: 1px solid rgba(34,211,238,0.15);
+    border-left: 3px solid #22d3ee; border-radius: 10px; padding: 12px 14px;
+    font-size: 13px; line-height: 1.6; color: #94a3b8;
+  }
+  .restriction-notice strong { color: #67e8f9; display: block; margin-bottom: 4px; }
+
+  .clarify-box {
+    background: rgba(255,184,48,0.05); border: 1px solid rgba(255,184,48,0.15);
+    border-left: 3px solid var(--angel-gold); border-radius: 10px; padding: 12px 14px;
+    font-size: 13px; line-height: 1.6; color: #cbd5e1;
+  }
+  .clarify-box strong { color: var(--angel-gold); display: block; margin-bottom: 4px; }
+
+  .escalate-box {
+    background: rgba(248,113,113,0.05); border: 1px solid rgba(248,113,113,0.15);
+    border-left: 3px solid #f87171; border-radius: 10px; padding: 12px 14px;
+    font-size: 13px; line-height: 1.6; color: #cbd5e1;
+  }
+  .escalate-box strong { color: #f87171; display: block; margin-bottom: 4px; }
+
+  .contact-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .contact-item { display: flex; align-items: center; gap: 8px; font-size: 12px; font-family: 'DM Mono', monospace; color: var(--angel-subtext); }
+
+  /* Typing */
+  .typing { display: flex; gap: 5px; padding: 14px 16px; background: var(--angel-surface); border: 1px solid var(--angel-border); border-radius: 14px 14px 14px 4px; width: fit-content; }
+  .typing-dot { width: 6px; height: 6px; background: var(--angel-subtext); border-radius: 50%; animation: typing-bounce 1.2s infinite; }
+  .typing-dot:nth-child(2){animation-delay:0.2s} .typing-dot:nth-child(3){animation-delay:0.4s}
+  @keyframes typing-bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  /* Input */
+  .input-area { background: var(--angel-surface); border-top: 1px solid var(--angel-border); padding: 14px 24px 18px; flex-shrink: 0; }
+  .quick-prompts { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .qp-btn {
+    background: transparent; border: 1px solid var(--angel-border); border-radius: 20px;
+    padding: 5px 12px; font-size: 12px; color: var(--angel-subtext); cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all 0.2s; white-space: nowrap;
+  }
+  .qp-btn:hover { border-color: var(--angel-red); color: var(--angel-text); background: rgba(232,0,42,0.05); }
+  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+  .input-box {
+    flex: 1; background: var(--angel-dark); border: 1px solid var(--angel-border);
+    border-radius: 12px; padding: 12px 16px; color: var(--angel-text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; resize: none; outline: none;
+    min-height: 46px; max-height: 120px; line-height: 1.5; transition: border-color 0.2s;
+  }
+  .input-box::placeholder { color: var(--angel-muted); }
+  .input-box:focus { border-color: var(--angel-red); }
+  .send-btn {
+    width: 46px; height: 46px; background: var(--angel-red); border: none;
+    border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0; box-shadow: 0 4px 14px rgba(232,0,42,0.35);
+  }
+  .send-btn:hover { background: var(--angel-accent); transform: scale(1.05); }
+  .send-btn:active { transform: scale(0.97); }
+
+  .welcome { text-align: center; padding: 20px 0; color: var(--angel-subtext); font-size: 13px; }
+  .welcome .big { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--angel-text); margin-bottom: 6px; display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-mark">A</div>
+  <div class="header-titles">
+    <h1>Ask Angel</h1>
+    <span>Intent Classifier · Brokerage Support</span>
+  </div>
+  <div class="status-pill"><div class="status-dot"></div>Model Active</div>
+</div>
+
+<div class="chat-area" id="chatArea">
+  <div class="welcome">
+    <span class="big">How can we help you?</span>
+    Describe your issue — Angel responds based on classification confidence.
+  </div>
+</div>
+
+<div class="input-area">
+  <div class="quick-prompts">
+    <button class="qp-btn" onclick="sendQuick('bank se paise cut ho gaye nahi aaye')">💸 Paise cut gaye <span style="font-size:10px;opacity:0.5;">HIGH</span></button>
+    <button class="qp-btn" onclick="sendQuick('I cannot login to my account')">🔒 Login issue <span style="font-size:10px;opacity:0.5;">HIGH</span></button>
+    <button class="qp-btn" onclick="sendQuick('My order is stuck')">⏳ Order stuck <span style="font-size:10px;opacity:0.5;">MID</span></button>
+    <button class="qp-btn" onclick="sendQuick('there is some issue with my money')">💰 Money issue <span style="font-size:10px;opacity:0.5;">MID</span></button>
+    <button class="qp-btn" onclick="sendQuick('What is my account balance?')">📋 Account info <span style="font-size:10px;opacity:0.5;">RESTRICT</span></button>
+    <button class="qp-btn" onclick="sendQuick('something seems off')">❓ Vague <span style="font-size:10px;opacity:0.5;">LOW</span></button>
+  </div>
+  <div class="input-row">
+    <textarea class="input-box" id="inputBox" placeholder="Type your complaint or question..." rows="1"></textarea>
+    <button class="send-btn" onclick="sendMessage()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════
+//  INTENT CLASSIFIER
+//  Pattern weights drive confidence tier:
+//  strong  → 0.85–0.97  → AUTO REPLY     (> 0.80)
+//  medium  → 0.52–0.72  → CLARIFICATION  (0.50–0.80)
+//  no match → 0.22–0.44 → ESCALATION     (< 0.50)
+// ════════════════════════════════════════
+const intentRules = [
+  {
+    intent: "FUND_FAILURE",
+    patterns: [
+      // Strong — explicit debit/failure signals
+      { re: /bank\s*se\s*cut/i,                               w: "strong" },
+      { re: /upi\s*se\s*paisa/i,                              w: "strong" },
+      { re: /amount\s*debit/i,                                 w: "strong" },
+      { re: /trading\s*balance\s*zero/i,                       w: "strong" },
+      { re: /paisa\s*(gaya|nahi|nai)/i,                        w: "strong" },
+      { re: /fund(s)?\s*(not|missing|fail|deduct|debit|cut)/i, w: "strong" },
+      { re: /money\s*(not|deduct|fail|miss|cut|gone|deducted)/i, w: "strong" },
+      { re: /payment\s*(fail|not\s*reflect)/i,                 w: "strong" },
+      { re: /debit\s*(ho|hua|gaya|nahi)/i,                     w: "strong" },
+      { re: /balance\s*(zero|nil|not\s*updat)/i,               w: "strong" },
+      { re: /cut\s*gaya/i,                                     w: "strong" },
+      { re: /paise\s*(nahi|nai|kaat)/i,                        w: "strong" },
+      { re: /\bdebited\b/i,                                    w: "strong" },
+      { re: /transfer\s*fail/i,                                w: "strong" },
+      { re: /funds?\s*not\s*(receiv|credit|add)/i,             w: "strong" },
+      { re: /recharge\s*fail/i,                                w: "strong" },
+      // Medium — word present, context ambiguous
+      { re: /\bpaise\b/i,                   w: "medium" },
+      { re: /\bpaisa\b/i,                   w: "medium" },
+      { re: /\bmoney\b/i,                   w: "medium" },
+      { re: /wallet\s*(empty|zero|fail)/i,  w: "medium" },
+      { re: /account\s*not\s*funded/i,      w: "medium" },
+    ]
+  },
+  {
+    intent: "LOGIN_ISSUE",
+    patterns: [
+      { re: /can('t|not)\s*login/i,                     w: "strong" },
+      { re: /login\s*(fail|issue|problem|error)/i,      w: "strong" },
+      { re: /unable\s*to\s*(login|sign\s*in|access)/i,  w: "strong" },
+      { re: /password\s*(wrong|forgot|reset|invalid)/i, w: "strong" },
+      { re: /otp\s*(not\s*receiv|fail|wrong|issue)/i,   w: "strong" },
+      { re: /account\s*(lock|block)/i,                  w: "strong" },
+      { re: /forgot\s*password/i,                       w: "strong" },
+      { re: /sign\s*in\s*(fail|error)/i,                w: "strong" },
+      { re: /2fa\s*(fail|issue)/i,                      w: "strong" },
+      { re: /session\s*(expire|timeout)/i,              w: "medium" },
+      { re: /can't\s*access\s*(my\s*)?account/i,        w: "medium" },
+      { re: /authentication\s*(fail|error)/i,           w: "medium" },
+    ]
+  },
+  {
+    intent: "ORDER_REJECTION",
+    patterns: [
+      { re: /order\s*(reject|fail|cancel|not\s*execut|not\s*place)/i, w: "strong" },
+      { re: /trade\s*(reject|fail|not\s*execut)/i,   w: "strong" },
+      { re: /buy\s*(fail|reject)/i,                  w: "strong" },
+      { re: /sell\s*(fail|reject)/i,                 w: "strong" },
+      { re: /insufficient\s*(margin|fund|balance)/i, w: "strong" },
+      { re: /execution\s*(fail|error)/i,             w: "strong" },
+      { re: /ipo\s*(reject|fail)/i,                  w: "strong" },
+      { re: /limit\s*order\s*(fail|reject)/i,        w: "strong" },
+      { re: /position\s*(not\s*open|reject)/i,       w: "medium" },
+      { re: /order\s*(not\s*going\s*through|stuck)/i, w: "medium" },
+    ]
+  },
+  {
+    intent: "ACCOUNT_INFO",
+    patterns: [
+      { re: /account\s*(balance|detail|info|statement|summary)/i, w: "strong" },
+      { re: /what\s*is\s*my\s*(balance|portfolio|holding)/i,      w: "strong" },
+      { re: /portfolio\s*(value|detail)/i,                         w: "strong" },
+      { re: /p&l|profit\s*&?\s*loss/i,                            w: "strong" },
+      { re: /kyc\s*(status|detail|update)/i,                       w: "strong" },
+      { re: /client\s*(code|id|detail)/i,                          w: "strong" },
+      { re: /tax\s*(report|p&l|statement)/i,                       w: "strong" },
+      { re: /annual\s*statement/i,                                  w: "strong" },
+      { re: /ledger\s*(balance|detail)/i,                           w: "medium" },
+      { re: /available\s*(margin|balance|fund)/i,                   w: "medium" },
+      { re: /my\s*(dp|demat)\s*(account|id)/i,                     w: "medium" },
+      { re: /nominee\s*(detail|add|update)/i,                      w: "medium" },
+      { re: /brokerage\s*(charge|detail)/i,                        w: "medium" },
+      { re: /account\s*opening\s*status/i,                         w: "medium" },
+    ]
+  }
+];
+
+function classifyIntent(text) {
+  const lower = text.toLowerCase().trim();
+  for (const rule of intentRules) {
+    for (const p of rule.patterns) {
+      if (p.re.test(lower)) {
+        let conf;
+        if (p.w === "strong")      conf = 0.85 + Math.random() * 0.12; // 0.85–0.97
+        else if (p.w === "medium") conf = 0.52 + Math.random() * 0.20; // 0.52–0.72
+        else                       conf = 0.28 + Math.random() * 0.18; // 0.28–0.46
+        return { intent: rule.intent, confidence: parseFloat(conf.toFixed(2)) };
+      }
+    }
+  }
+  // No pattern match — vague/unknown → always escalate
+  return { intent: "GENERAL_QUERY", confidence: parseFloat((0.22 + Math.random() * 0.22).toFixed(2)) };
+}
+
+// ════════════════════════════════════════
+//  DECISION POLICY
+// ════════════════════════════════════════
+const TIER = { AUTO:"AUTO", CLARIFY:"CLARIFY", ESCALATE:"ESCALATE", RESTRICT:"RESTRICT" };
+
+function getDecisionTier(result) {
+  if (result.intent === "ACCOUNT_INFO") return TIER.RESTRICT;
+  if (result.confidence > 0.80)         return TIER.AUTO;
+  if (result.confidence >= 0.50)        return TIER.CLARIFY;
+  return TIER.ESCALATE;
+}
+
+function getPolicyNote(tier) {
+  const map = {
+    AUTO:     "confidence > 0.80 → auto reply dispatched",
+    CLARIFY:  "confidence 0.50–0.80 → clarification requested",
+    ESCALATE: "confidence < 0.50 → routing to human agent",
+    RESTRICT: "ACCOUNT_INFO → data access restricted, agent CTA shown"
+  };
+  return map[tier];
+}
+
+// ════════════════════════════════════════
+//  CONTENT
+// ════════════════════════════════════════
+const autoReplies = {
+  FUND_FAILURE: {
+    headline: "Got it — we're on your payment issue right away.",
+    body: "Your payment appears to have been debited but hasn't reflected in your trading account yet. This is usually resolved automatically within 30–60 minutes. We've notified our payments team and a reconciliation will be initiated. You'll receive a confirmation to your registered email once it's done.",
+    steps: ["Check your bank statement to confirm the debit amount", "Allow up to 60 minutes for automatic reconciliation", "If not resolved by then, raise a support ticket below"]
+  },
+  LOGIN_ISSUE: {
+    headline: "Login issue noted — let's get you back in.",
+    body: "It looks like you're having trouble accessing your Angel One account. This could be due to an expired session, an incorrect password, or an OTP mismatch. Try the 'Forgot Password' option on the login screen — it takes less than 2 minutes to reset.",
+    steps: ["Clear your browser or app cache, then try logging in again", "Use 'Forgot Password' to set a new password", "Ensure the OTP comes to your registered mobile number"]
+  },
+  ORDER_REJECTION: {
+    headline: "Order rejection logged — here's what likely happened.",
+    body: "Your order wasn't executed, which can happen for a few common reasons: insufficient margin, the stock being in an F&O ban or circuit limit, or a risk management hold. Please check your margin balance and the stock status before placing the order again.",
+    steps: ["Check your available margin under the Funds section", "Verify if the stock is under a circuit limit or F&O ban", "Retry with an adjusted quantity or a revised limit price"]
+  },
+  GENERAL_QUERY: {
+    headline: "Your query is with us — we'll sort it out.",
+    body: "We've received your message and it's been routed to the right support team. To help us resolve this faster, please have your Client ID ready and include as much detail about the issue as possible.",
+    steps: ["Share your Client ID so we can pull up your account", "Mention the date and time the issue first occurred", "Attach a screenshot if you're seeing an error on-screen"]
+  }
+};
+
+const clarifyQuestions = {
+  FUND_FAILURE:    "It sounds like this might be about a payment. Could you help us understand — was money deducted from your bank but not showing in your Angel One account? Or is your existing trading balance lower than expected?",
+  LOGIN_ISSUE:     "Looks like you might be having trouble accessing your account. Are you unable to log in at all, or is a specific feature inside the app not working as expected?",
+  ORDER_REJECTION: "This seems to be about a trade. Could you tell us more — was a particular buy or sell order rejected, or are you unable to place any orders right now?",
+  ACCOUNT_INFO:    "We'd love to help with your account query. Could you clarify what you're looking for — your balance, a statement, KYC status, or something else?",
+  GENERAL_QUERY:   "We'd like to make sure you get the right help. Could you share a little more about what you're experiencing? For example — is it about payments, trading, logging in, or something else?"
+};
+
+const clarifyHints = {
+  FUND_FAILURE:    "those details about the debit",
+  LOGIN_ISSUE:     "more about the exact access issue",
+  ORDER_REJECTION: "a bit more about the order",
+  ACCOUNT_INFO:    "what you're looking to check",
+  GENERAL_QUERY:   "a bit more context"
+};
+
+const tierLabels = {
+  AUTO:     "✓ AUTO REPLY",
+  CLARIFY:  "⚡ CLARIFICATION NEEDED",
+  ESCALATE: "↑ HUMAN ESCALATION",
+  RESTRICT: "⚠ ACCESS RESTRICTED"
+};
+
+const intentColors = {
+  FUND_FAILURE:"#FF6B35", LOGIN_ISSUE:"#4ECDC4",
+  ORDER_REJECTION:"#A855F7", ACCOUNT_INFO:"#22D3EE", GENERAL_QUERY:"#86EFAC"
+};
+
+// ════════════════════════════════════════
+//  BUILD RESPONSE
+// ════════════════════════════════════════
+function buildResponseEl(result) {
+  const tier = getDecisionTier(result);
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap';
+
+  // Main bubble
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+
+  if (tier === TIER.RESTRICT)  bubble.innerHTML = buildRestrictHTML();
+  else if (tier === TIER.AUTO) bubble.innerHTML = buildAutoHTML(result);
+  else if (tier === TIER.CLARIFY) bubble.innerHTML = buildClarifyHTML(result);
+  else bubble.innerHTML = buildEscalateHTML();
+
+  wrap.appendChild(bubble);
+  wrap.appendChild(buildIntentCard(result, tier));
+  return wrap;
+}
+
+function buildAutoHTML(result) {
+  const d = autoReplies[result.intent] || autoReplies.GENERAL_QUERY;
+  const steps = d.steps.map((s,i) =>
+    `<div style="display:flex;gap:8px;margin-bottom:6px;font-size:13px;align-items:flex-start;">
+      <span style="color:var(--angel-red);font-weight:700;min-width:18px;margin-top:1px;">${i+1}.</span>
+      <span style="color:#b0b0c8;line-height:1.5;">${s}</span>
+    </div>`).join('');
+  return `
+    <div style="font-weight:600;color:var(--angel-text);margin-bottom:8px;font-size:14px;">${d.headline}</div>
+    <div style="color:#94a3b8;line-height:1.75;margin-bottom:14px;font-size:13.5px;">${d.body}</div>
+    <div style="font-size:10px;color:var(--angel-subtext);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;font-family:'DM Mono',monospace;">What you can do next</div>
+    <div style="margin-bottom:16px;">${steps}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <button class="cta-btn primary" onclick="ctaClick('Raise a Ticket')">📝 Raise a Ticket</button>
+      <button class="cta-btn secondary" onclick="ctaClick('Track Status')">🔍 Track Status</button>
+    </div>`;
+}
+
+function buildClarifyHTML(result) {
+  const q = clarifyQuestions[result.intent] || clarifyQuestions.GENERAL_QUERY;
+  const hint = clarifyHints[result.intent] || "a bit more context";
+  return `
+    <div style="color:var(--angel-text);font-size:14px;font-weight:500;margin-bottom:10px;">Just to make sure we help you correctly —</div>
+    <div class="clarify-box">
+      <strong>🤔 Quick clarification needed</strong>
+      ${q}
+    </div>
+    <div style="margin-top:10px;font-size:13px;color:#94a3b8;line-height:1.65;">
+      Once you share ${hint}, we'll route you to the right team immediately — no need to repeat yourself.
+    </div>
+    <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;">
+      <button class="cta-btn warn" onclick="ctaClick('Add More Details')">💬 Add More Detail</button>
+      <button class="cta-btn secondary" onclick="ctaClick('Talk to Support Agent')">👤 Skip & Talk to Agent</button>
+    </div>`;
+}
+
+function buildEscalateHTML() {
+  return `
+    <div style="color:var(--angel-text);font-size:14px;font-weight:500;margin-bottom:10px;">We want to make sure you get the right help.</div>
+    <div class="escalate-box">
+      <strong>🙋 Let's connect you with a human agent</strong>
+      We weren't able to confidently match your query to a known issue. Rather than give you a generic response, we think a support agent will be able to understand your situation much better and resolve it faster.
+    </div>
+    <div style="margin-top:12px;font-size:13px;color:#94a3b8;line-height:1.65;">You can reach our support team through any of these channels:</div>
+    <div class="contact-list" style="margin-top:10px;">
+      <div class="contact-item"><span>📞</span><span>1800-123-4567 &nbsp;·&nbsp; Toll Free &nbsp;·&nbsp; Mon–Sat, 9AM–6PM</span></div>
+      <div class="contact-item"><span>📧</span><span>support@angelone.in &nbsp;·&nbsp; Response within 4 hours</span></div>
+      <div class="contact-item"><span>💬</span><span>Live Chat &nbsp;·&nbsp; Available on the Angel One App</span></div>
+    </div>
+    <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;">
+      <button class="cta-btn primary" onclick="ctaClick('Email Support')">📧 Email Support</button>
+      <button class="cta-btn secondary" onclick="ctaClick('Call Now')">📞 Call Now</button>
+      <button class="cta-btn secondary" onclick="ctaClick('Live Chat')">💬 Live Chat</button>
+    </div>`;
+}
+
+function buildRestrictHTML() {
+  return `
+    <div style="color:var(--angel-text);font-size:14px;font-weight:500;margin-bottom:10px;">We take your account security seriously.</div>
+    <div class="restriction-notice">
+      <strong>🔐 Account details can't be shared here</strong>
+      For your protection, sensitive information — such as your balance, portfolio, statements, KYC status, and personal details — <strong style="color:#f87171;">cannot be accessed through this chat.</strong> This is a security measure to keep your financial data safe.
+    </div>
+    <div style="margin-top:10px;font-size:13px;color:#94a3b8;line-height:1.7;">
+      To check your account details, please log in to the <strong style="color:var(--angel-text);">Angel One app or website</strong> using your credentials. If you need help from our team, you can contact us securely below.
+    </div>
+    <div class="contact-list" style="margin-top:12px;">
+      <div class="contact-item"><span>📞</span><span>1800-123-4567 &nbsp;·&nbsp; Toll Free &nbsp;·&nbsp; Mon–Sat, 9AM–6PM</span></div>
+      <div class="contact-item"><span>📧</span><span>support@angelone.in</span></div>
+    </div>
+    <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;">
+      <button class="cta-btn info" onclick="ctaClick('Open Angel One App')">📱 Open Angel One App</button>
+      <button class="cta-btn secondary" onclick="ctaClick('Contact Support Agent')">👤 Contact Support Agent</button>
+    </div>`;
+}
+
+function buildIntentCard(result, tier) {
+  const card = document.createElement('div');
+  card.className = 'intent-card';
+
+  const tierBadge = document.createElement('div');
+  tierBadge.className = `tier-badge tier-${tier}`;
+  tierBadge.textContent = tierLabels[tier];
+
+  const cardLabel = document.createElement('div');
+  cardLabel.className = 'card-label';
+  cardLabel.textContent = '⚡ Classification Result';
+
+  const intentRow = document.createElement('div');
+  intentRow.className = 'intent-row';
+  const intentName = document.createElement('span');
+  intentName.className = `intent-name intent-${result.intent}`;
+  intentName.textContent = result.intent;
+  intentRow.appendChild(intentName);
+
+  const confRow = document.createElement('div');
+  confRow.className = 'confidence-row';
+  const confBg = document.createElement('div');
+  confBg.className = 'conf-bar-bg';
+  const confFill = document.createElement('div');
+  confFill.className = 'conf-bar-fill';
+  const pct = result.confidence;
+  confFill.style.background = pct > 0.80 ? 'var(--tier-high)' : pct >= 0.50 ? 'var(--tier-mid)' : 'var(--tier-low)';
+  confFill.style.width = '0%';
+  confBg.appendChild(confFill);
+  const confVal = document.createElement('div');
+  confVal.className = 'conf-value';
+  confVal.textContent = (result.confidence * 100).toFixed(0) + '%';
+  confRow.appendChild(confBg);
+  confRow.appendChild(confVal);
+
+  const jsonOut = document.createElement('div');
+  jsonOut.className = 'json-output';
+  jsonOut.textContent = JSON.stringify({
+    intent: result.intent,
+    confidence: result.confidence,
+    tier,
+    policy: getPolicyNote(tier)
+  }, null, 2);
+
+  card.appendChild(tierBadge);
+  card.appendChild(cardLabel);
+  card.appendChild(intentRow);
+  card.appendChild(confRow);
+  card.appendChild(jsonOut);
+
+  setTimeout(() => { confFill.style.width = (result.confidence * 100) + '%'; }, 100);
+  return card;
+}
+
+// ════════════════════════════════════════
+//  UI HELPERS
+// ════════════════════════════════════════
+function ctaClick(label) {
+  appendBotText(`Sure! Connecting you — "${label}" initiated. Please hold on.`);
+}
+
+function appendBotText(text) {
+  const area = document.getElementById('chatArea');
+  const msg = document.createElement('div');
+  msg.className = 'message bot'; msg.style.animation = 'slide-up 0.3s ease';
+  const av = document.createElement('div'); av.className = 'avatar bot'; av.textContent = 'A';
+  const bw = document.createElement('div'); bw.className = 'bubble-wrap';
+  const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text;
+  bw.appendChild(b); msg.appendChild(av); msg.appendChild(bw); area.appendChild(msg);
+  area.scrollTop = area.scrollHeight;
+}
+
+function appendMessage(role, content) {
+  const area = document.getElementById('chatArea');
+  const msg = document.createElement('div'); msg.className = `message ${role}`;
+  const av = document.createElement('div');
+  av.className = `avatar ${role === 'bot' ? 'bot' : 'user-av'}`;
+  av.textContent = role === 'bot' ? 'A' : 'U';
+  const wrap = document.createElement('div'); wrap.className = 'bubble-wrap';
+  if (typeof content === 'string') {
+    const b = document.createElement('div'); b.className = 'bubble'; b.textContent = content;
+    wrap.appendChild(b);
+  } else { wrap.appendChild(content); }
+  msg.appendChild(av); msg.appendChild(wrap); area.appendChild(msg);
+  area.scrollTop = area.scrollHeight; return msg;
+}
+
+function createTypingIndicator() {
+  const area = document.getElementById('chatArea');
+  const msg = document.createElement('div'); msg.className = 'message bot'; msg.id = 'typing-indicator';
+  const av = document.createElement('div'); av.className = 'avatar bot'; av.textContent = 'A';
+  const typing = document.createElement('div'); typing.className = 'typing';
+  typing.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  msg.appendChild(av); msg.appendChild(typing); area.appendChild(msg);
+  area.scrollTop = area.scrollHeight; return msg;
+}
+
+async function processMessage(text) {
+  appendMessage('user', text);
+  const typingEl = createTypingIndicator();
+  await new Promise(r => setTimeout(r, 700 + Math.random() * 500));
+  const result = classifyIntent(text);
+  typingEl.remove();
+
+  const area = document.getElementById('chatArea');
+  const msg = document.createElement('div');
+  msg.className = 'message bot'; msg.style.animation = 'slide-up 0.3s ease';
+  const av = document.createElement('div'); av.className = 'avatar bot'; av.textContent = 'A';
+  const responseEl = buildResponseEl(result);
+  msg.appendChild(av); msg.appendChild(responseEl); area.appendChild(msg);
+  area.scrollTop = area.scrollHeight;
+}
+
+function sendMessage() {
+  const box = document.getElementById('inputBox');
+  const text = box.value.trim();
+  if (!text) return;
+  box.value = ''; box.style.height = 'auto';
+  processMessage(text);
+}
+
+function sendQuick(text) { processMessage(text); }
+
+const inputBox = document.getElementById('inputBox');
+inputBox.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+inputBox.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+</script>
+</body>
+</html>

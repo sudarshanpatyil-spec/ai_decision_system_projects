@@ -1,0 +1,577 @@
+
+<h2 class="sr-only">Wide-format Angel One recommendation engine — compact phone left, maximum dashboard space right</h2>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.root{display:grid;grid-template-columns:242px 1fr;background:#0D0F18;border-radius:14px;overflow:hidden;width:100%;min-height:960px}
+
+/* ═══ LEFT PHONE COLUMN ═══ */
+.lcol{background:#111420;border-right:1px solid #1E2130;display:flex;flex-direction:column;align-items:center;padding:16px 12px;gap:12px;min-width:0}
+.col-lbl{font-size:8px;font-weight:700;color:#3B4060;letter-spacing:.14em;text-transform:uppercase;align-self:flex-start}
+
+.phone{width:214px;background:#F3F4F8;border-radius:28px;border:2px solid #1E2130;overflow:hidden;flex-shrink:0}
+.ph-status{background:#fff;padding:7px 14px 3px;display:flex;justify-content:space-between;align-items:center}
+.ph-time{font-size:11px;font-weight:700;color:#111}
+.ph-icons{font-size:9px;color:#333;display:flex;gap:3px}
+.ph-topbar{background:#fff;padding:4px 10px 6px;display:flex;gap:6px;align-items:center}
+.ph-search{flex:1;background:#EEEFF3;border-radius:14px;padding:4px 9px;font-size:9px;color:#aaa;border:none}
+.ph-av{width:24px;height:24px;border-radius:50%;background:#E3EEFF;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#1B5ED4;flex-shrink:0}
+.ph-tabs{background:#fff;display:flex;border-bottom:1px solid #EAEDF2;padding:0 8px}
+.ph-tab{font-size:8px;padding:5px 5px;color:#aaa;border-bottom:2px solid transparent;white-space:nowrap}
+.ph-tab.on{color:#1B5ED4;border-bottom-color:#1B5ED4;font-weight:700}
+.ph-body{background:#EEF0F5;padding:8px}
+.mhdr{display:flex;justify-content:space-between;margin-bottom:4px}
+.mhdr-t{font-size:9px;font-weight:700;color:#111}
+.mhdr-a{font-size:8px;color:#1B5ED4}
+.mkt-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:7px}
+.mc{background:#fff;border-radius:7px;padding:5px 7px}
+.mc-n{font-size:7px;color:#999}
+.mc-v{font-size:10px;font-weight:700;color:#D93025}
+.mc-c{font-size:7px;color:#D93025}
+.banner{border-radius:9px;padding:10px 11px;margin-bottom:6px;background:#1B5ED4}
+.banner.xp{background:#5B3FA0}
+.bn-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px}
+.bn-chip{font-size:6px;font-weight:700;padding:2px 6px;border-radius:7px;background:rgba(255,255,255,.22);color:#fff;letter-spacing:.04em}
+.bn-pct{font-size:8px;color:rgba(255,255,255,.85);font-weight:600}
+.bn-name{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px;margin-bottom:1px}
+.bn-tag{font-size:7px;color:rgba(255,255,255,.68);margin-bottom:7px}
+.bn-stats{display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:8px}
+.bs-l{font-size:6px;color:rgba(255,255,255,.58);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}
+.bs-v{font-size:9px;font-weight:700;color:#fff}
+.bn-btns{display:flex;gap:4px}
+.btn-inv{flex:1;background:#fff;color:#1B5ED4;border:none;border-radius:6px;padding:6px 0;font-size:8px;font-weight:700;cursor:pointer}
+.btn-inv.xc{color:#5B3FA0}
+.btn-w{background:rgba(255,255,255,.18);color:#fff;border:none;border-radius:6px;padding:6px 7px;font-size:7px;cursor:pointer}
+.why-drop{background:rgba(0,0,0,.22);border-radius:6px;padding:6px;margin-top:5px;font-size:7px;color:rgba(255,255,255,.88);line-height:1.55;display:none}
+.promo{background:#FFF8EC;border-radius:7px;padding:5px 7px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.promo-t{font-size:7px;font-weight:700;color:#7A4F00}
+.promo-s{font-size:6px;color:#1B5ED4}
+.qrow{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px}
+.qc{background:#fff;border-radius:7px;padding:5px;text-align:center}
+.qc-i{font-size:12px;margin-bottom:2px}
+.qc-t{font-size:6px;color:#555;line-height:1.3}
+.g-hdr{display:flex;justify-content:space-between;margin-bottom:3px}
+.g-title{font-size:9px;font-weight:700;color:#111}
+.gtabs{display:flex;gap:3px;margin-bottom:4px}
+.gtab{font-size:6px;padding:2px 7px;border-radius:7px;border:0.5px solid #ddd;background:#fff;color:#666;font-weight:600}
+.gtab.on{background:#1B5ED4;color:#fff;border-color:#1B5ED4}
+.gg{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.gc{background:#fff;border-radius:7px;padding:6px}
+.gc-lo{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;margin-bottom:3px}
+.gc-n{font-size:7px;font-weight:700;color:#111}
+.gc-p{font-size:9px;font-weight:700;color:#1A7040}
+.gc-c{font-size:6px;color:#1A7040}
+.gc-b{font-size:6px;color:#aaa;margin-top:2px}
+.ph-nav{background:#fff;display:flex;border-top:1px solid #EAEDF2;padding:4px 0 7px}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.ni-i{font-size:12px}
+.ni-l{font-size:6px;color:#aaa;font-weight:600}
+.ni.on .ni-l{color:#1B5ED4}
+
+/* Input panel below phone */
+.inp-panel{background:#0D0F18;border:1px solid #1E2130;border-radius:10px;padding:11px 12px;width:100%}
+.inp-panel-title{font-size:8px;font-weight:700;color:#3B82F6;text-transform:uppercase;letter-spacing:.1em;margin-bottom:9px}
+.inp-sec{font-size:7px;font-weight:700;color:#3B4060;text-transform:uppercase;letter-spacing:.09em;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid #1A2236}
+.ig{display:flex;flex-direction:column;gap:3px;margin-bottom:0}
+.ig label{font-size:8px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:.06em}
+.ig select{background:#070810;color:#D1D5DB;border:1px solid #1E2540;border-radius:6px;padding:6px 8px;font-size:11px;width:100%;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5'%3E%3Cpath d='M0 0l4.5 5 4.5-5z' fill='%236B7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-color:#070810}
+.ig select:focus{border-color:#3B82F6}
+.ig select option{background:#0D0F18;color:#D1D5DB}
+.inp-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:9px}
+.inp-grid-1{display:grid;grid-template-columns:1fr;gap:7px;margin-bottom:9px}
+.run-btn{width:100%;background:#1B5ED4;color:#fff;border:none;border-radius:7px;padding:10px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.02em;margin-top:2px}
+.run-btn:hover{background:#1550C0}
+
+/* ═══ RIGHT DASHBOARD ═══ */
+.rcol{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.dash-nav{background:#0A0C14;border-bottom:1px solid #1E2130;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:44px;flex-shrink:0}
+.dash-logo{font-size:13px;font-weight:700;color:#fff}
+.dash-logo span{color:#FF6B35}
+.dash-right{display:flex;align-items:center;gap:10px}
+.dash-badge{font-size:9px;background:#0F1E38;color:#60A5FA;padding:3px 10px;border-radius:9px;font-weight:600}
+.dash-session{font-size:9px;color:#3B4060}
+
+.dash-body{flex:1;padding:14px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.kpi{background:#0D0F18;border:1px solid #1E2130;border-radius:8px;padding:10px 12px}
+.kpi-l{font-size:8px;color:#4B5270;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;font-weight:700}
+.kpi-v{font-size:18px;font-weight:700;color:#E2E8F0;line-height:1.1}
+.kpi-v.bl{color:#60A5FA}
+.kpi-v.gr{color:#34D399}
+.kpi-v.am{color:#FBBF24}
+.kpi-v.pu{color:#A78BFA}
+
+/* Main 3-col grid */
+.main-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start}
+
+/* Cards */
+.dc{background:#0D0F18;border:1px solid #1E2130;border-radius:10px;padding:12px 14px}
+.dc-title{font-size:9px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.dc-sub{font-size:9px;color:#3B4060}
+
+/* Score table — no scroll, compact */
+.stbl{width:100%;border-collapse:collapse;table-layout:fixed}
+.stbl th{font-size:8px;font-weight:700;color:#4B5270;text-align:left;padding:6px 6px;border-bottom:1px solid #1A1D2A;background:#080A12;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.stbl td{padding:4px 6px;border-bottom:1px solid #12141E;color:#C4C8D8;vertical-align:middle}
+.stbl tr.hl td{background:#0F1B38}
+.stbl tr:hover td{background:#12141E}
+.rk{width:16px;height:16px;border-radius:50%;background:#1A1D2A;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:#4B5270}
+.rk.g{background:#2A1C05;color:#FBBF24}
+.rk.s{background:#0F1A28;color:#93C5FD}
+.rk.b{background:#0A1A14;color:#6EE7B7}
+.pill{font-size:7px;padding:1px 5px;border-radius:4px;font-weight:700;white-space:nowrap;display:inline-block}
+.pl{background:#0F1C35;color:#93C5FD}
+.pm{background:#221500;color:#FCD34D}
+.ps2{background:#061510;color:#6EE7B7}
+.pp{background:#0F2050;color:#93C5FD}
+.pex{background:#1C0F38;color:#C4B5FD}
+.pelig{background:#061510;color:#6EE7B7}
+.pflt{background:#111318;color:#3B4060}
+.phi{color:#34D399;font-weight:700}
+.pmd{color:#FBBF24}
+.plo{color:#F87171}
+.pb-t{height:4px;border-radius:2px;background:#1A1D2A;display:inline-block;vertical-align:middle;width:44px}
+.pb-f{height:4px;border-radius:2px;display:inline-block}
+
+/* Decision trace */
+.exp-box{background:#080E1C;border:1px solid #1A3050;border-radius:10px;padding:12px 13px}
+.exp-title{font-size:8px;font-weight:700;color:#60A5FA;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+.exp-step{display:flex;gap:8px;margin-bottom:10px;align-items:flex-start}
+.sn{width:17px;height:17px;border-radius:50%;background:#0F1E38;color:#60A5FA;font-size:7px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.st{font-size:10px;font-weight:600;color:#E2E8F0;margin-bottom:2px}
+.sd{font-size:9px;color:#8A90A8;line-height:1.55}
+.sd b{color:#93C5FD;font-weight:600}
+
+/* Feature bars */
+.fb-row{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+.fb-lbl{font-size:8px;color:#8A90A8;flex-shrink:0;width:108px;line-height:1.35}
+.fb-sub{font-size:7px;color:#3B4060}
+.fb-track{flex:1;height:6px;background:#1A1D2A;border-radius:3px;overflow:hidden}
+.fb-fill{height:6px;border-radius:3px}
+.fb-sc{font-size:9px;font-weight:700;min-width:30px;text-align:right}
+.fb-wt{font-size:7px;color:#3B4060;min-width:32px;text-align:right}
+
+/* Logs */
+.log-tab-row{display:flex;gap:4px;margin-bottom:10px}
+.ltab{font-size:10px;padding:5px 13px;border-radius:6px;border:1px solid #1E2130;cursor:pointer;color:#6B7280;background:#080A12;font-weight:600}
+.ltab.on{background:#1B5ED4;color:#fff;border-color:#1B5ED4}
+.log-tbl{width:100%;border-collapse:collapse}
+.log-tbl th{font-size:8px;font-weight:700;color:#4B5270;text-align:left;padding:6px 10px;border-bottom:1px solid #1A1D2A;background:#080A12;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.log-tbl td{padding:5px 10px;border-bottom:1px solid #12141E;color:#C4C8D8;font-size:9px;white-space:nowrap}
+.log-tbl tr:hover td{background:#12141E}
+.tc{font-size:8px;padding:2px 7px;border-radius:4px;font-weight:700;display:inline-block}
+.tc-exploit{background:#0F1C35;color:#93C5FD}
+.tc-explore{background:#1C0F38;color:#C4B5FD}
+.tc-yes{background:#061510;color:#6EE7B7}
+.tc-no{background:#200808;color:#FCA5A5}
+.tc-pend{background:#111318;color:#4B5270}
+.empty-st{text-align:center;padding:40px 20px;color:#2A2D3E;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.empty-st-icon{font-size:32px;opacity:.4}
+</style>
+
+<div class="root">
+
+<!-- ══ LEFT COLUMN ══ -->
+<div class="lcol">
+  <div class="col-lbl">App preview</div>
+
+  <!-- Phone -->
+  <div class="phone">
+    <div class="ph-status">
+      <span class="ph-time" id="clk">12:06</span>
+      <div class="ph-icons"><span>▲▲▲</span><span style="margin-left:2px">⚡</span></div>
+    </div>
+    <div class="ph-topbar">
+      <div style="width:23px;height:23px;border-radius:5px;background:#EEEFF3;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;width:10px">
+          <div style="height:3px;background:#bbb;border-radius:1px"></div><div style="height:3px;background:#1B5ED4;border-radius:1px"></div>
+          <div style="height:3px;background:#bbb;border-radius:1px"></div><div style="height:3px;background:#bbb;border-radius:1px"></div>
+        </div>
+      </div>
+      <div class="ph-search">Search for 'Top Gainer'</div>
+      <div class="ph-av">KR</div>
+    </div>
+    <div class="ph-tabs">
+      <div class="ph-tab on">Stocks</div><div class="ph-tab">F&amp;O</div>
+      <div class="ph-tab">MF●</div><div class="ph-tab">Loans</div><div class="ph-tab">FD</div>
+    </div>
+    <div class="ph-body">
+      <div class="mhdr"><span class="mhdr-t">Markets today</span><span class="mhdr-a">View all &gt;</span></div>
+      <div class="mkt-row">
+        <div class="mc"><div class="mc-n">NIFTY · Exp 13 Apr</div><div class="mc-v">23,842 ▼</div><div class="mc-c">-207.95 (-0.86%)</div></div>
+        <div class="mc"><div class="mc-n">SENSEX · Exp Thu</div><div class="mc-v">78,502 ▼</div><div class="mc-c">-703.25 (-0.89%)</div></div>
+      </div>
+      <div class="banner" id="phoneBanner">
+        <div class="bn-top">
+          <span class="bn-chip" id="bnChip">AI RECOMMENDATION</span>
+          <span class="bn-pct" id="bnPct">—</span>
+        </div>
+        <div class="bn-name" id="bnName">Run engine →</div>
+        <div class="bn-tag" id="bnTag">Configure inputs below</div>
+        <div class="bn-stats">
+          <div><div class="bs-l">6M return</div><div class="bs-v" id="bnRet">—</div></div>
+          <div><div class="bs-l">Risk</div><div class="bs-v" id="bnRisk">—</div></div>
+          <div><div class="bs-l">Ticket</div><div class="bs-v" id="bnTick">—</div></div>
+        </div>
+        <div class="bn-btns">
+          <button class="btn-inv" id="bnBtn" onclick="handleInvest()">Invest Now</button>
+          <button class="btn-w" onclick="toggleWhy()">Why? ▾</button>
+        </div>
+        <div class="why-drop" id="whyDrop"></div>
+      </div>
+      <div class="promo">
+        <div><div class="promo-t">Get a loan upto ₹5 lakhs instantly!</div><div class="promo-s">Check Offer &gt;</div></div>
+        <span style="font-size:14px">🏦</span>
+      </div>
+      <div class="qrow">
+        <div class="qc"><div class="qc-i">🎁</div><div class="qc-t">Rewards &amp; Offers</div></div>
+        <div class="qc"><div class="qc-i">💸</div><div class="qc-t">Refer &amp; Earn ₹3750</div></div>
+      </div>
+      <div class="g-hdr"><span class="g-title">Gainers · <span style="color:#bbb;font-weight:400">Losers</span></span><span style="font-size:7px;color:#1B5ED4">View All &gt;</span></div>
+      <div class="gtabs"><div class="gtab on">Large Cap</div><div class="gtab">Mid Cap</div><div class="gtab">Small Cap</div></div>
+      <div class="gg">
+        <div class="gc"><div class="gc-lo" style="background:#FFE0B2;color:#BF360C">SI</div><div class="gc-n">SOLARINDS</div><div class="gc-p">₹14,525 ▲</div><div class="gc-c">+3.21%</div><div class="gc-b">↗ 5,761 buys</div></div>
+        <div class="gc"><div class="gc-lo" style="background:#E3F2FD;color:#0D47A1">AP</div><div class="gc-n">ADANIPOWER</div><div class="gc-p">₹181.35 ▲</div><div class="gc-c">+3.15%</div><div class="gc-b">↗ 67,256 buys</div></div>
+      </div>
+    </div>
+    <div class="ph-nav">
+      <div class="ni on"><div class="ni-i">🏠</div><div class="ni-l">HOME</div></div>
+      <div class="ni"><div class="ni-i">★</div><div class="ni-l">WATCHLIST</div></div>
+      <div class="ni"><div class="ni-i">📁</div><div class="ni-l">PORTFOLIO</div></div>
+      <div class="ni"><div class="ni-i">📋</div><div class="ni-l">ORDERS</div></div>
+      <div class="ni"><div class="ni-i">👤</div><div class="ni-l">ACCOUNT</div></div>
+    </div>
+  </div>
+
+  <!-- Inputs below phone -->
+  <div class="inp-panel">
+    <div class="inp-panel-title">Engine inputs</div>
+
+    <div class="inp-sec" style="margin-bottom:6px">User profile</div>
+    <div class="inp-grid-2">
+      <div class="ig"><label>User type</label><select id="ut"><option value="new">New user</option><option value="old" selected>Returning</option></select></div>
+      <div class="ig"><label>Age (days)</label><select id="ua"><option value="15">15 d</option><option value="60">60 d</option><option value="180" selected>180 d</option><option value="365">365 d</option><option value="730">730+ d</option></select></div>
+    </div>
+    <div class="inp-grid-1" style="margin-bottom:9px">
+      <div class="ig"><label>Acquisition channel</label><select id="ch"><option>organic</option><option>paid</option><option>b2b</option><option>referral</option></select></div>
+    </div>
+
+    <div class="inp-sec" style="margin-bottom:6px">Market context</div>
+    <div class="inp-grid-2">
+      <div class="ig"><label>Stability</label><select id="ms"><option>low</option><option selected>medium</option><option>high</option></select></div>
+      <div class="ig"><label>Critical news</label><select id="cn"><option value="no" selected>No</option><option value="yes">Yes</option></select></div>
+    </div>
+
+    <div class="inp-sec" style="margin-bottom:6px;margin-top:2px">Model config</div>
+    <div class="inp-grid-1">
+      <div class="ig"><label>Probability threshold</label><select id="thr"><option value="0.50">0.50 — relaxed</option><option value="0.60">0.60</option><option value="0.65" selected>0.65 — default</option><option value="0.70">0.70</option><option value="0.75">0.75 — strict</option></select></div>
+    </div>
+
+    <button class="run-btn" onclick="runEngine()">▶ Run Recommendation Engine</button>
+  </div>
+</div>
+
+<!-- ══ RIGHT DASHBOARD ══ -->
+<div class="rcol">
+  <div class="dash-nav">
+    <div class="dash-logo">Angel<span>One</span><span style="font-size:10px;color:#3B4060;font-weight:400;margin-left:8px">Recommendation Engine</span></div>
+    <div class="dash-right">
+      <span class="dash-session" id="sesLabel">No session yet</span>
+      <span class="dash-badge">Trained Model · v2.1</span>
+    </div>
+  </div>
+
+  <div class="dash-body">
+
+    <!-- Empty state -->
+    <div id="emptyState" class="empty-st" style="min-height:500px;justify-content:center">
+      <div class="empty-st-icon">⚡</div>
+      <div style="font-size:14px;font-weight:600;color:#4B5270">Recommendation engine ready</div>
+      <div style="font-size:11px;color:#2A2D3E;max-width:320px;line-height:1.65;margin-top:4px">
+        Set the user profile &amp; market context in the left panel.<br>
+        Click <span style="color:#60A5FA;font-weight:600">Run Recommendation Engine</span> to simulate<br>
+        trained model inference across all 20 candidate stocks.
+      </div>
+    </div>
+
+    <!-- Results (hidden until run) -->
+    <div id="results" style="display:none;display:flex;flex-direction:column;gap:12px">
+
+      <!-- KPI bar -->
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-l">Selected stock</div><div class="kpi-v bl" id="kStock" style="font-size:13px;margin-top:3px">—</div></div>
+        <div class="kpi"><div class="kpi-l">Invest probability</div><div class="kpi-v gr" id="kProb">—</div></div>
+        <div class="kpi"><div class="kpi-l">Strategy</div><div class="kpi-v pu" id="kMode" style="font-size:13px;margin-top:3px">—</div></div>
+        <div class="kpi"><div class="kpi-l">Eligible / pool</div><div class="kpi-v am" id="kElig">—</div></div>
+        <div class="kpi"><div class="kpi-l">Rank in pool</div><div class="kpi-v" id="kRank">—</div></div>
+      </div>
+
+      <!-- 3-col grid -->
+      <div class="main-grid">
+
+        <!-- Score table: spans 2 cols -->
+        <div class="dc" style="grid-column:span 2">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+            <span class="dc-title">All 20 candidates — model scores</span>
+            <span class="dc-sub" id="tblSub">—</span>
+          </div>
+          <table class="stbl">
+            <colgroup>
+              <col style="width:22px"><col style="width:130px"><col style="width:44px">
+              <col style="width:46px"><col style="width:74px"><col style="width:40px">
+              <col style="width:52px"><col style="width:62px">
+            </colgroup>
+            <thead><tr>
+              <th>#</th><th>Stock</th><th>Cap</th>
+              <th>6M ret.</th><th>Ticket size</th><th>Score</th>
+              <th>Probability</th><th>Status</th>
+            </tr></thead>
+            <tbody id="sTbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Decision trace -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="exp-box">
+            <div class="exp-title">Decision trace</div>
+            <div id="expSteps"></div>
+          </div>
+          <div class="dc">
+            <div class="dc-title" style="margin-bottom:10px">Feature contributions — <span id="featSym" style="color:#60A5FA;text-transform:none;font-size:10px;font-weight:600">selected stock</span></div>
+            <div id="featBars"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Logs -->
+      <div class="dc">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+          <span class="dc-title">Session logs</span>
+          <span class="dc-sub" id="logCount">—</span>
+        </div>
+        <div class="log-tab-row">
+          <div class="ltab on" onclick="switchLog(0,this)">Impression log</div>
+          <div class="ltab" onclick="switchLog(1,this)">Action log</div>
+          <div class="ltab" onclick="switchLog(2,this)">Derived tags</div>
+        </div>
+        <div style="overflow-x:auto">
+          <div id="lv0"></div>
+          <div id="lv1" style="display:none"></div>
+          <div id="lv2" style="display:none"></div>
+        </div>
+      </div>
+
+    </div><!-- /results -->
+  </div>
+</div>
+</div>
+
+<script>
+const STOCKS=[
+  {name:"Reliance Industries",sym:"RELIANCE",type:"large",ret:"10–20%",ticket:"10k–50k",sec:"Energy",retMid:15,tMid:30000},
+  {name:"TCS",sym:"TCS",type:"large",ret:"5–10%",ticket:"10k–50k",sec:"IT",retMid:7.5,tMid:30000},
+  {name:"HDFC Bank",sym:"HDFCBANK",type:"large",ret:"5–10%",ticket:"5k–10k",sec:"Banking",retMid:7.5,tMid:7500},
+  {name:"Infosys",sym:"INFY",type:"large",ret:"10–20%",ticket:"5k–10k",sec:"IT",retMid:15,tMid:7500},
+  {name:"ICICI Bank",sym:"ICICIBANK",type:"large",ret:"20–40%",ticket:"5k–10k",sec:"Banking",retMid:30,tMid:7500},
+  {name:"Bajaj Finance",sym:"BAJFINANCE",type:"large",ret:"10–20%",ticket:"5k–10k",sec:"NBFC",retMid:15,tMid:7500},
+  {name:"Adani Ports",sym:"ADANIPORTS",type:"large",ret:"20–40%",ticket:"1k–5k",sec:"Infra",retMid:30,tMid:3000},
+  {name:"Tata Motors",sym:"TATAMOTORS",type:"mid",ret:"20–40%",ticket:"1k–5k",sec:"Auto",retMid:30,tMid:3000},
+  {name:"Persistent Sys",sym:"PERSISTENT",type:"mid",ret:">40%",ticket:"5k–10k",sec:"IT",retMid:50,tMid:7500},
+  {name:"Tube Investments",sym:"TUBEINVEST",type:"mid",ret:"10–20%",ticket:"1k–5k",sec:"Mfg",retMid:15,tMid:3000},
+  {name:"Cholamandalam",sym:"CHOLAFIN",type:"mid",ret:"20–40%",ticket:"1k–5k",sec:"NBFC",retMid:30,tMid:3000},
+  {name:"Alkem Labs",sym:"ALKEM",type:"mid",ret:"5–10%",ticket:"5k–10k",sec:"Pharma",retMid:7.5,tMid:7500},
+  {name:"Birlasoft",sym:"BSOFT",type:"mid",ret:">40%",ticket:"500–1000",sec:"IT",retMid:50,tMid:750},
+  {name:"Carysil",sym:"CARYSIL",type:"small",ret:"20–40%",ticket:"500–1000",sec:"Consumer",retMid:30,tMid:750},
+  {name:"RITES Ltd",sym:"RITES",type:"small",ret:"10–20%",ticket:"500–1000",sec:"Infra",retMid:15,tMid:750},
+  {name:"Bharat Rasayan",sym:"BHARATRAS",type:"small",ret:"<5%",ticket:"5k–10k",sec:"Agrochem",retMid:2.5,tMid:7500},
+  {name:"Mold-Tek Pack",sym:"MOLDTKPAC",type:"small",ret:"5–10%",ticket:"500–1000",sec:"Packaging",retMid:7.5,tMid:750},
+  {name:"Shivalik Bim",sym:"SHIVALIK",type:"small",ret:">40%",ticket:"100–500",sec:"Metal",retMid:50,tMid:300},
+  {name:"Manappuram Fin",sym:"MANAPPURAM",type:"small",ret:"<5%",ticket:"100–500",sec:"NBFC",retMid:2.5,tMid:300},
+  {name:"Rategain Travel",sym:"RATEGAIN",type:"small",ret:"20–40%",ticket:"500–1000",sec:"Tech",retMid:30,tMid:750}
+];
+
+/* Trained model weights — learned from historical P(invest|user,stock,market) */
+const W={ret:0.28,cap:0.22,ticket:0.14,maturity:0.16,channel:0.10,market:0.08,news:0.02};
+
+function sigmoid(x){return 1/(1+Math.exp(-x))}
+
+function feats(s,ut,ua,ch,ms,cn){
+  return{
+    ret:   {s:Math.min(s.retMid/50,1),            w:W.ret,     lbl:"6M return bucket", detail:s.ret},
+    cap:   {s:{large:1.0,mid:0.65,small:0.38}[s.type], w:W.cap, lbl:"Cap type",      detail:s.type+"-cap"},
+    ticket:{s:s.tMid<=1000?1.0:s.tMid<=5000?.82:s.tMid<=10000?.65:.40, w:W.ticket, lbl:"Ticket size", detail:"₹"+s.ticket},
+    mat:   {s:Math.min(Math.min(parseInt(ua)/730,1)*(ut==='old'?1.0:.75),1), w:W.maturity, lbl:"User maturity", detail:ut+" · "+ua+"d"},
+    ch:    {s:{organic:.72,paid:.52,b2b:.62,referral:.90}[ch], w:W.channel, lbl:"Acq. channel",    detail:ch},
+    mkt:   {s:{low:.35,medium:.65,high:.92}[ms],  w:W.market,  lbl:"Market stability", detail:ms},
+    news:  {s:cn==='yes'?.18:.82,                 w:W.news,    lbl:"Critical news",    detail:cn==='yes'?"Alert":"No alert"}
+  };
+}
+
+function calcP(s,ut,ua,ch,ms,cn){
+  const f=feats(s,ut,ua,ch,ms,cn);
+  let dot=0;Object.values(f).forEach(v=>dot+=v.s*v.w);
+  const logit=(dot-.44)*9+(Math.random()*.04-.02);
+  return parseFloat(Math.min(.97,Math.max(.04,sigmoid(logit))).toFixed(3));
+}
+
+const riskL={large:"Low",mid:"Medium",small:"High"};
+const tags={large:"Blue-chip stability play",mid:"Growth momentum pick",small:"High-alpha opportunity"};
+let impL=[],actL=[],tagL=[],sesN=0,curSel=null,clickStart=null;
+
+function runEngine(){
+  const ut=document.getElementById('ut').value;
+  const ua=document.getElementById('ua').value;
+  const ch=document.getElementById('ch').value;
+  const ms=document.getElementById('ms').value;
+  const cn=document.getElementById('cn').value;
+  const thr=parseFloat(document.getElementById('thr').value);
+  const xp=Math.random()<.10;
+
+  let scored=STOCKS.map(s=>({...s,p:calcP(s,ut,ua,ch,ms,cn),f:feats(s,ut,ua,ch,ms,cn)}));
+  scored.sort((a,b)=>b.p-a.p);
+  const elig=scored.filter(s=>s.p>=thr);
+  let sel,mode;
+  if(xp||!elig.length){sel=scored[Math.floor(Math.random()*scored.length)];mode="explore";}
+  else{sel=elig[0];mode="exploit";}
+  const rank=scored.findIndex(s=>s.name===sel.name)+1;
+  curSel=sel;sesN++;clickStart=Date.now();
+
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('results').style.display='flex';
+  document.getElementById('sesLabel').textContent='Session #'+sesN;
+
+  /* phone */
+  const b=document.getElementById('phoneBanner');
+  b.className='banner'+(mode==='explore'?' xp':'');
+  document.getElementById('bnChip').textContent=mode==='explore'?'EXPLORING':'AI RECOMMENDATION';
+  document.getElementById('bnPct').textContent=Math.round(sel.p*100)+'% likely';
+  document.getElementById('bnName').textContent=sel.sym;
+  document.getElementById('bnTag').textContent=tags[sel.type]+' · '+sel.sec;
+  document.getElementById('bnRet').textContent=sel.ret;
+  document.getElementById('bnRisk').textContent=riskL[sel.type];
+  document.getElementById('bnTick').textContent='₹'+sel.ticket;
+  document.getElementById('bnBtn').className='btn-inv'+(mode==='explore'?' xc':'');
+  document.getElementById('bnBtn').textContent='Invest Now';
+  document.getElementById('whyDrop').style.display='none';
+  document.getElementById('whyDrop').textContent=mode==='explore'
+    ?'Exploration pick (10% chance): random sample to discover undervalued stocks.'
+    :'Highest P(invest) above threshold '+thr+'. Drivers: '+sel.ret+' return, '+sel.type+'-cap, '+ch+' channel.';
+
+  /* kpi */
+  document.getElementById('kStock').textContent=sel.sym;
+  document.getElementById('kProb').textContent=Math.round(sel.p*100)+'%';
+  const mEl=document.getElementById('kMode');
+  mEl.textContent=mode==='exploit'?'Exploit':'Explore';
+  mEl.style.color=mode==='exploit'?'#60A5FA':'#A78BFA';
+  document.getElementById('kElig').textContent=elig.length+' / 20';
+  document.getElementById('kRank').textContent='#'+rank+' of 20';
+
+  /* score table */
+  document.getElementById('tblSub').textContent=elig.length+' eligible · threshold '+thr+' · highlighted = selected';
+  let rows='';
+  scored.forEach((s,i)=>{
+    const isSel=s.name===sel.name;
+    const pc=s.p>=.70?'phi':s.p>=.50?'pmd':'plo';
+    const bc=s.p>=.65?'#34D399':s.p>=.50?'#FBBF24':'#F87171';
+    const bw=Math.round(s.p*44);
+    const rkCls=i===0?'rk g':i<3?'rk s':i<5?'rk b':'rk';
+    const capCls='pill p'+(s.type==='large'?'l':s.type==='mid'?'m':'s2');
+    const st=isSel?'<span class="pill '+(mode==='exploit'?'pp':'pex')+'">'+(mode==='exploit'?'Selected':'Exploring')+'</span>'
+      :s.p>=thr?'<span class="pill pelig">Eligible</span>':'<span class="pill pflt">Filtered</span>';
+    rows+=`<tr class="${isSel?'hl':''}">
+      <td><div class="${rkCls}">${i+1}</div></td>
+      <td style="font-size:10px;font-weight:${isSel?700:400};color:${isSel?'#93C5FD':'#C4C8D8'}">${s.name}</td>
+      <td><span class="${capCls}">${s.type}</span></td>
+      <td style="font-size:9px">${s.ret}</td>
+      <td style="font-size:9px;color:#6B7280">₹${s.ticket}</td>
+      <td class="${pc}" style="font-size:11px;font-weight:700">${Math.round(s.p*100)}%</td>
+      <td><div class="pb-t"><div class="pb-f" style="width:${bw}px;background:${bc}"></div></div></td>
+      <td>${st}</td>
+    </tr>`;
+  });
+  document.getElementById('sTbody').innerHTML=rows;
+
+  /* decision trace */
+  const fv=Object.values(sel.f).sort((a,b)=>(b.s*b.w)-(a.s*a.w));
+  const d1=fv[0],d2=fv[1],dw=fv[fv.length-1];
+  document.getElementById('expSteps').innerHTML=`
+  <div class="exp-step"><div class="sn">1</div><div><div class="st">Model inference — P(invest | user, stock, market)</div><div class="sd">Trained on historical investment data. For each of the 20 stocks the model computes a weighted sigmoid over 7 features. <b>${sel.sym}</b> scored <b>${Math.round(sel.p*100)}%</b>, ranking <b>#${rank}</b> in the pool.</div></div></div>
+  <div class="exp-step"><div class="sn">2</div><div><div class="st">Threshold filter — min probability ${thr}</div><div class="sd"><b>${elig.length} of 20</b> stocks passed. ${elig.length===0?'No stocks cleared the threshold — exploration auto-triggered.':elig.length<4?'Strict conditions: only '+elig.length+' stocks passed under current inputs.':''}</div></div></div>
+  <div class="exp-step"><div class="sn">3</div><div><div class="st">${mode==='explore'?'Explore mode (10% random trigger)':'Exploit mode — greedy best pick'}</div><div class="sd">${mode==='explore'?'Random sampling fired. <b>'+sel.sym+'</b> may not be the top scorer — this prevents the engine from over-recommending high-confidence stocks and discovers undervalued candidates.':'<b>'+sel.sym+'</b> had the highest P(invest) among eligible stocks. Exploit mode (90%) always picks the greedy-best.'}</div></div></div>
+  <div class="exp-step"><div class="sn">4</div><div><div class="st">Top score drivers for ${sel.sym}</div><div class="sd">Strongest: <b>${d1.lbl}</b> (${d1.detail}) → <b>${(d1.s*d1.w*100).toFixed(1)} pts</b>. Second: <b>${d2.lbl}</b> (${d2.detail}) → <b>${(d2.s*d2.w*100).toFixed(1)} pts</b>. Weakest signal: <b>${dw.lbl}</b> (${dw.detail}). ${cn==='yes'?'News alert suppressed all scores (~−13%).':''} ${ch==='referral'?'Referral channel added ~+10% to user score.':ch==='paid'?'Paid channel discounted user score ~−13%.':''}</div></div></div>`;
+
+  /* feature bars */
+  document.getElementById('featSym').textContent=sel.sym;
+  const maxC=Math.max(...fv.map(f=>f.s*f.w));
+  let fb='';
+  fv.forEach(f=>{
+    const c=f.s*f.w,pct=Math.round(c/maxC*100);
+    const clr=pct>=70?'#34D399':pct>=40?'#FBBF24':'#F87171';
+    const sc=f.s>=.7?'#34D399':f.s>=.45?'#FBBF24':'#F87171';
+    fb+=`<div class="fb-row">
+      <div class="fb-lbl">${f.lbl}<br><span class="fb-sub">${f.detail}</span></div>
+      <div class="fb-track"><div class="fb-fill" style="width:${pct}%;background:${clr}"></div></div>
+      <div class="fb-sc" style="color:${sc}">${Math.round(f.s*100)}%</div>
+      <div class="fb-wt">×${Math.round(f.w*100)}%</div>
+    </div>`;
+  });
+  document.getElementById('featBars').innerHTML=fb;
+
+  /* logs */
+  const ts=new Date().toISOString();
+  const uid='USR_'+Math.random().toString(36).substr(2,5).toUpperCase();
+  const sid='S'+String(sesN).padStart(3,'0');
+  impL.unshift({sid,uid,time:ts.substr(11,8),type:ut,age:ua+'d',channel:ch,market:ms,news:cn,thr,eligible:elig.length+'/20',selected:sel.sym,strategy:mode,prob:Math.round(sel.p*100)+'%'});
+  actL.unshift({sid,uid,stock:sel.sym,strategy:mode,clicked:'Pending',invested:'Pending',time_to_click:'—',amount:'—'});
+  const useg=(ut==='new'?'new':'ret')+'-'+(parseInt(ua)<90?'early':parseInt(ua)<365?'mid':'mature');
+  tagL.unshift({sid,user_segment:useg,stock_seg:sel.type+'-cap·'+sel.sec,mkt_tag:ms+(cn==='yes'?'+news':''),strategy_tag:mode,risk:riskL[sel.type],ticket_tier:sel.tMid<=1000?'low':sel.tMid<=10000?'mid':'high'});
+  document.getElementById('logCount').textContent=sesN+' session'+(sesN>1?'s':'')+' recorded';
+  renderLogs();
+}
+
+function renderLogs(){
+  document.getElementById('lv0').innerHTML=mkT(['Session','User ID','Time','Type','Age','Channel','Market','News','Threshold','Eligible','Selected','Strategy','Probability'],['sid','uid','time','type','age','channel','market','news','thr','eligible','selected','strategy','prob'],impL,'strategy');
+  document.getElementById('lv1').innerHTML=mkT(['Session','User ID','Stock','Strategy','Clicked?','Invested?','Time to click','Amount (₹)'],['sid','uid','stock','strategy','clicked','invested','time_to_click','amount'],actL,'strategy');
+  document.getElementById('lv2').innerHTML=mkT(['Session','User segment','Stock segment','Market tag','Strategy tag','Risk','Ticket tier'],['sid','user_segment','stock_seg','mkt_tag','strategy_tag','risk','ticket_tier'],tagL,'strategy_tag');
+}
+function mkT(cols,keys,data,sk){
+  if(!data.length) return '<div class="empty-st" style="padding:20px"><div>No data yet</div></div>';
+  let h='<table class="log-tbl"><thead><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>';
+  data.forEach(r=>{
+    h+='<tr>';
+    keys.forEach(k=>{
+      let v=r[k]===undefined?'—':r[k];
+      if(k===sk) v='<span class="tc tc-'+v+'">'+v+'</span>';
+      else if(v==='Pending') v='<span class="tc tc-pend">Pending</span>';
+      else if(v==='yes') v='<span class="tc tc-yes">Yes</span>';
+      else if(v==='no') v='<span class="tc tc-no">No</span>';
+      h+='<td>'+v+'</td>';
+    });
+    h+='</tr>';
+  });
+  return h+'</tbody></table>';
+}
+function switchLog(i,el){
+  [0,1,2].forEach(j=>{document.getElementById('lv'+j).style.display=j===i?'block':'none';});
+  document.querySelectorAll('.ltab').forEach((t,j)=>t.className='ltab'+(j===i?' on':''));
+}
+function handleInvest(){
+  if(!curSel) return;
+  const t=((Date.now()-clickStart)/1000).toFixed(1);
+  if(actL.length){actL[0].clicked='yes';actL[0].invested='yes';actL[0].time_to_click=t+'s';actL[0].amount=(Math.floor(Math.random()*9+1)*1000).toLocaleString('en-IN');}
+  renderLogs();
+  document.getElementById('bnBtn').textContent='Invested ✓';
+  setTimeout(()=>{document.getElementById('bnBtn').textContent='Invest Now';},2000);
+}
+function toggleWhy(){
+  const d=document.getElementById('whyDrop');
+  d.style.display=d.style.display==='block'?'none':'block';
+}
+(function tick(){
+  const n=new Date();
+  document.getElementById('clk').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  setTimeout(tick,30000);
+})();
+</script>

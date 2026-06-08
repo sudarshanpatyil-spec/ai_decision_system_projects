@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campaign Automation – Part 2: Night Job & Orchestration</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #080d18;
+    --bg2: #0c1220;
+    --bg3: #101828;
+    --card: #0d1526;
+    --card2: #111c30;
+    --border: rgba(80,160,120,0.12);
+    --border2: rgba(80,160,120,0.25);
+    --accent: #00d4aa;
+    --accent2: #4e7cff;
+    --amber: #f5a623;
+    --red: #ff5a5a;
+    --green: #3ecf8e;
+    --purple: #7c5cfc;
+    --text: #ddefea;
+    --text2: #7a9b92;
+    --text3: #4a6860;
+    --font: 'Inter', system-ui, sans-serif;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+  .header { background: linear-gradient(135deg, #080d18 0%, #0a1420 100%); border-bottom: 1px solid var(--border2); padding: 0 2rem; position: sticky; top: 0; z-index: 100; }
+  .header-inner { max-width: 1300px; margin: 0 auto; display: flex; align-items: center; gap: 1rem; height: 60px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+  .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .part-badge { background: rgba(0,212,170,0.12); border: 1px solid rgba(0,212,170,0.3); color: var(--accent); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px; }
+  .nav { display: flex; gap: 4px; margin-left: auto; }
+  .nav-btn { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 500; background: transparent; color: var(--text2); }
+  .nav-btn:hover, .nav-btn.active { background: rgba(0,212,170,0.12); color: var(--accent); }
+
+  .page { max-width: 1300px; margin: 0 auto; padding: 2rem; }
+  .page-title { font-size: 26px; font-weight: 700; margin-bottom: 4px; background: linear-gradient(135deg, var(--text), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .page-subtitle { color: var(--text2); font-size: 14px; margin-bottom: 2rem; }
+
+  .section { margin-bottom: 2.5rem; }
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; }
+  .section-num { width: 28px; height: 28px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .section-title { font-size: 16px; font-weight: 600; }
+  .section-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+  .card2 { background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+
+  /* Timeline / pipeline steps */
+  .pipeline { display: flex; flex-direction: column; gap: 0; }
+  .pipe-step { display: flex; gap: 1.25rem; position: relative; }
+  .pipe-step:not(:last-child)::after { content: ''; position: absolute; left: 19px; top: 40px; bottom: -1px; width: 2px; background: var(--border2); z-index: 0; }
+  .pipe-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; z-index: 1; font-size: 16px; }
+  .pipe-body { flex: 1; padding-bottom: 1.5rem; }
+  .pipe-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .pipe-desc { font-size: 12px; color: var(--text2); }
+  .pipe-time { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); margin-bottom: 4px; }
+
+  /* Prediction table */
+  .pred-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .pred-table th { font-size: 10px; color: var(--text2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border2); white-space: nowrap; }
+  .pred-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); font-size: 11px; }
+  .pred-table tr:hover td { background: rgba(0,212,170,0.03); }
+  .pred-table tr.rank1 td { background: rgba(0,212,170,0.06); }
+  .rank-badge { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+  .rank1-badge { background: rgba(0,212,170,0.2); color: var(--accent); }
+  .rank-other { background: rgba(255,255,255,0.06); color: var(--text2); }
+
+  /* Tag */
+  .tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 600; }
+  .tag-blue { background: rgba(78,124,255,0.15); color: #4e7cff; border: 1px solid rgba(78,124,255,0.25); }
+  .tag-green { background: rgba(62,207,142,0.15); color: #3ecf8e; border: 1px solid rgba(62,207,142,0.25); }
+  .tag-amber { background: rgba(245,166,35,0.15); color: #f5a623; border: 1px solid rgba(245,166,35,0.25); }
+  .tag-purple { background: rgba(124,92,252,0.15); color: #7c5cfc; border: 1px solid rgba(124,92,252,0.25); }
+  .tag-red { background: rgba(255,90,90,0.15); color: #ff5a5a; border: 1px solid rgba(255,90,90,0.25); }
+  .tag-teal { background: rgba(0,212,170,0.15); color: #00d4aa; border: 1px solid rgba(0,212,170,0.25); }
+
+  /* Epsilon greedy viz */
+  .eps-container { display: flex; gap: 1.25rem; }
+  .eps-pie-wrap { width: 160px; flex-shrink: 0; }
+  .eps-pie { position: relative; }
+  .eps-donut { width: 140px; height: 140px; }
+  .eps-legend { font-size: 11px; margin-top: 10px; }
+  .eps-legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .eps-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .eps-detail { flex: 1; }
+  .eps-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .eps-rank { font-size: 10px; color: var(--text2); width: 50px; flex-shrink: 0; }
+  .eps-bar-wrap { flex: 1; background: var(--bg3); border-radius: 3px; height: 8px; overflow: hidden; }
+  .eps-bar { height: 100%; border-radius: 3px; }
+  .eps-pct { font-size: 10px; font-weight: 700; width: 30px; text-align: right; }
+  .eps-note { font-size: 11px; color: var(--text2); background: rgba(0,212,170,0.06); border: 1px solid rgba(0,212,170,0.15); border-radius: var(--radius-sm); padding: 10px; margin-top: 10px; }
+
+  /* Guardrails */
+  .guard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  .guard-card { background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; }
+  .guard-icon { font-size: 22px; margin-bottom: 6px; }
+  .guard-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .guard-desc { font-size: 11px; color: var(--text2); }
+  .guard-rule { display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 700; background: rgba(245,166,35,0.12); color: var(--amber); border: 1px solid rgba(245,166,35,0.25); border-radius: 4px; padding: 2px 6px; }
+
+  /* Cohort cards */
+  .cohort-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  .cohort-card { background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; position: relative; overflow: hidden; }
+  .cohort-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 4px 4px 0 0; }
+  .cc-act::before { background: linear-gradient(90deg, #4e7cff, #7c5cfc); }
+  .cc-rea::before { background: linear-gradient(90deg, #00d4aa, #3ecf8e); }
+  .cc-ret::before { background: linear-gradient(90deg, #f5a623, #ff9a3c); }
+  .cohort-type { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text2); margin-bottom: 4px; }
+  .cohort-name { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .cohort-seg { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+  .cohort-stat { font-size: 10px; color: var(--text2); }
+  .cohort-stat strong { color: var(--text); }
+
+  /* ClevertTap panel */
+  .ct-panel { background: linear-gradient(135deg, rgba(78,124,255,0.06), rgba(0,212,170,0.06)); border: 1px solid rgba(78,124,255,0.2); border-radius: var(--radius); padding: 1.25rem; }
+  .ct-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+  .ct-logo { width: 36px; height: 36px; background: linear-gradient(135deg, #e04747, #c23232); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; color: white; }
+  .ct-title { font-size: 16px; font-weight: 700; }
+  .ct-subtitle { font-size: 11px; color: var(--text2); }
+  .ct-campaigns { display: flex; flex-direction: column; gap: 0.5rem; }
+  .ct-campaign-row { display: flex; align-items: center; gap: 10px; background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .ct-campaign-num { font-size: 10px; font-weight: 700; color: var(--text2); width: 24px; }
+  .ct-campaign-name { flex: 1; font-size: 12px; font-weight: 600; }
+  .ct-campaign-meta { display: flex; gap: 6px; align-items: center; }
+  .ct-status { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+  .status-ready { background: rgba(62,207,142,0.15); color: #3ecf8e; }
+  .status-sched { background: rgba(245,166,35,0.15); color: #f5a623; }
+  .status-queued { background: rgba(78,124,255,0.15); color: #4e7cff; }
+  .ct-count { font-size: 10px; color: var(--text2); }
+
+  /* Night job simulator */
+  .job-btn { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #080d18; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: opacity 0.2s, transform 0.1s; }
+  .job-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .job-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .log-panel { background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 1rem; font-family: 'Courier New', monospace; font-size: 11px; height: 240px; overflow-y: auto; margin-top: 0.75rem; }
+  .log-line { margin-bottom: 2px; }
+  .log-time { color: var(--text3); }
+  .log-info { color: var(--accent); }
+  .log-success { color: var(--green); }
+  .log-warn { color: var(--amber); }
+  .log-error { color: var(--red); }
+  .log-neutral { color: var(--text2); }
+
+  /* Progress bar */
+  .progress-wrap { background: var(--bg3); border-radius: 4px; height: 6px; overflow: hidden; margin-top: 6px; }
+  .progress-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.3s; }
+
+  /* Stats row */
+  .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+  .stat-card { background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.875rem; text-align: center; }
+  .stat-val { font-size: 22px; font-weight: 700; }
+  .stat-label { font-size: 10px; color: var(--text2); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+  /* Info pill */
+  .info-pill { background: rgba(0,212,170,0.06); border: 1px solid rgba(0,212,170,0.18); border-radius: var(--radius-sm); padding: 0.75rem 1rem; font-size: 12px; color: var(--text2); display: flex; gap: 10px; align-items: flex-start; }
+  .info-pill i { color: var(--accent); margin-top: 1px; flex-shrink: 0; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .pulse { animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 1s linear infinite; display: inline-block; }
+
+  /* Flow arrows */
+  .flow-arrow { text-align: center; color: var(--text3); font-size: 20px; padding: 4px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon"><i class="ti ti-moon" style="color:white;font-size:18px"></i></div>
+      <span>Campaign Automation Engine</span>
+    </div>
+    <span class="part-badge">PART 2 — NIGHT JOB, ORCHESTRATION & CLEVERTAP</span>
+    <nav class="nav">
+      <button class="nav-btn" onclick="window.open('campaign_automation_part1.html')">← Part 1: ML Model</button>
+      <button class="nav-btn active">Night Job</button>
+    </nav>
+  </div>
+</div>
+
+<div class="page">
+  <div class="page-title">Nightly Orchestration Engine</div>
+  <div class="page-subtitle">Prediction table generation → ε-greedy orchestration → contact policy guardrails → CleverTap cohort update</div>
+
+  <!-- SECTION 1: Night Job Overview -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div>
+        <div class="section-title">Night Job Pipeline</div>
+        <div class="section-desc">Runs daily at 02:00 AM — processes entire user base and updates campaign cohorts</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="pipeline">
+        <div class="pipe-step">
+          <div class="pipe-icon" style="background:rgba(78,124,255,0.15);border:2px solid rgba(78,124,255,0.4);color:#4e7cff"><i class="ti ti-database" style="font-size:16px"></i></div>
+          <div class="pipe-body">
+            <div class="pipe-time">02:00 AM — Step 1</div>
+            <div class="pipe-title">Feature Store Snapshot</div>
+            <div class="pipe-desc">Pull latest behavioural signals (login, trades, sessions, notifications) and profile data for all eligible users from the data warehouse. Approx 5M users processed.</div>
+          </div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-icon" style="background:rgba(124,92,252,0.15);border:2px solid rgba(124,92,252,0.4);color:#7c5cfc"><i class="ti ti-brain" style="font-size:16px"></i></div>
+          <div class="pipe-body">
+            <div class="pipe-time">02:30 AM — Step 2</div>
+            <div class="pipe-title">XGBoost Batch Prediction</div>
+            <div class="pipe-desc">For each user, run all 3 models (activation / reactivation / retention) across all 36 combos. Outputs P(convert|no_campaign) and P(convert|combo[i]) for each user × combo pair.</div>
+          </div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-icon" style="background:rgba(0,212,170,0.15);border:2px solid rgba(0,212,170,0.4);color:#00d4aa"><i class="ti ti-table" style="font-size:16px"></i></div>
+          <div class="pipe-body">
+            <div class="pipe-time">04:00 AM — Step 3</div>
+            <div class="pipe-title">Prediction Table Creation</div>
+            <div class="pipe-desc">Compute Incremental Business Value for all combos. Rank top 10 combos per user per journey type. Write to PREDICTION_TABLE partitioned by date and user_id.</div>
+          </div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-icon" style="background:rgba(245,166,35,0.15);border:2px solid rgba(245,166,35,0.4);color:#f5a623"><i class="ti ti-shield-check" style="font-size:16px"></i></div>
+          <div class="pipe-body">
+            <div class="pipe-time">04:30 AM — Step 4</div>
+            <div class="pipe-title">Orchestration Layer</div>
+            <div class="pipe-desc">Apply ε-greedy (90/10 exploitation/exploration), contact frequency policies, compliance blocks, and segment eligibility rules. Assign final campaign for each user.</div>
+          </div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-icon" style="background:rgba(62,207,142,0.15);border:2px solid rgba(62,207,142,0.4);color:#3ecf8e"><i class="ti ti-send" style="font-size:16px"></i></div>
+          <div class="pipe-body" style="padding-bottom:0">
+            <div class="pipe-time">05:00 AM — Step 5</div>
+            <div class="pipe-title">CleverTap Cohort Update</div>
+            <div class="pipe-desc">12 campaign cohorts (4 activation + 4 reactivation + 4 retention, one per segment) pushed to CleverTap via API. Campaigns scheduled for optimal send time per user.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Prediction Table -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div>
+        <div class="section-title">Prediction Table Structure</div>
+        <div class="section-desc">Top 10 combos per user ranked by Incremental Business Value (IBV)</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="info-pill" style="margin-bottom:1rem">
+        <i class="ti ti-info-circle" style="font-size:16px"></i>
+        <span>Only the <strong style="color:var(--text)">top 10 entries per user</strong> are retained in the prediction table and fed to the orchestration layer. These become the candidate pool for ε-greedy selection. Row #1 is the "exploit" choice (90% probability); rows #2–10 are "explore" candidates (10% probability, weighted by IBV rank).</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="pred-table" id="pred-table">
+          <thead>
+            <tr>
+              <th>Rank</th><th>User ID</th><th>Journey</th><th>Channel</th><th>Segment</th><th>Creative</th>
+              <th>P(no camp)</th><th>P(with camp)</th><th>Uplift</th><th>Seg Value</th><th>IBV (₹)</th>
+            </tr>
+          </thead>
+          <tbody id="pred-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Epsilon Greedy -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div>
+        <div class="section-title">ε-Greedy Exploitation / Exploration (90 / 10)</div>
+        <div class="section-desc">Prevents model bias while maximising business value. 10% random exploration with weighted probability.</div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="eps-container">
+          <div class="eps-pie-wrap">
+            <svg class="eps-donut" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#00d4aa" stroke-width="14" stroke-dasharray="213.6 237.3" stroke-dashoffset="59" opacity="0.9"/>
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#4e7cff" stroke-width="14" stroke-dasharray="23.7 427.2" stroke-dashoffset="-154.6" opacity="0.8"/>
+              <text x="50" y="47" text-anchor="middle" font-size="14" font-weight="700" fill="#00d4aa" font-family="Inter,sans-serif">90%</text>
+              <text x="50" y="60" text-anchor="middle" font-size="9" fill="#7a9b92" font-family="Inter,sans-serif">exploit</text>
+            </svg>
+            <div class="eps-legend">
+              <div class="eps-legend-item"><div class="eps-dot" style="background:var(--accent)"></div><span style="font-size:10px;color:var(--text2)">90% Exploitation</span></div>
+              <div class="eps-legend-item"><div class="eps-dot" style="background:var(--accent2)"></div><span style="font-size:10px;color:var(--text2)">10% Exploration</span></div>
+            </div>
+          </div>
+          <div class="eps-detail">
+            <div style="font-size:12px;font-weight:700;margin-bottom:0.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">Exploration Probability (Weighted)</div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:8px">Higher-ranked combos get more explore probability</div>
+            <div class="eps-row">
+              <div class="eps-rank" style="color:var(--accent)">Rank 1 (Best)</div>
+              <div class="eps-bar-wrap"><div class="eps-bar" style="width:90%;background:var(--accent)"></div></div>
+              <div class="eps-pct" style="color:var(--accent)">90%</div>
+            </div>
+            <div class="eps-row">
+              <div class="eps-rank">Rank 2</div>
+              <div class="eps-bar-wrap"><div class="eps-bar" style="width:30%;background:var(--accent2)"></div></div>
+              <div class="eps-pct">3.0%</div>
+            </div>
+            <div class="eps-row">
+              <div class="eps-rank">Rank 3</div>
+              <div class="eps-bar-wrap"><div class="eps-bar" style="width:22%;background:var(--accent2)"></div></div>
+              <div class="eps-pct">2.2%</div>
+            </div>
+            <div class="eps-row">
+              <div class="eps-rank">Rank 4</div>
+              <div class="eps-bar-wrap"><div class="eps-bar" style="width:17%;background:var(--accent2)"></div></div>
+              <div class="eps-pct">1.7%</div>
+            </div>
+            <div class="eps-row">
+              <div class="eps-rank">Rank 5</div>
+              <div class="eps-bar-wrap"><div class="eps-bar" style="width:13%;background:var(--accent2)"></div></div>
+              <div class="eps-pct">1.3%</div>
+            </div>
+            <div class="eps-row">
+              <div class="eps-rank">Ranks 6–10</div>
+              <div class="eps-bar-wrap"><div class="eps-bar" style="width:8%;background:var(--text3)"></div></div>
+              <div class="eps-pct" style="color:var(--text3)">1.8%</div>
+            </div>
+          </div>
+        </div>
+        <div class="eps-note">
+          <strong style="color:var(--text)">Why exploration matters:</strong> Without it, the model would always choose the same combo and never learn if alternatives perform better. The 10% explore budget — weighted so Rank 2 beats Rank 10 — collects user feedback that continuously retrains the model and prevents exploitation bias.
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1rem">ε-Greedy Decision Logic (Per User)</div>
+        <div style="background:var(--bg);border-radius:var(--radius-sm);padding:1rem;font-family:'Courier New',monospace;font-size:11px;line-height:1.8;color:var(--text2)">
+          <span style="color:#7c5cfc">function</span> <span style="color:var(--accent)">selectCampaign</span>(user_id, top10) {<br>
+          &nbsp;&nbsp;<span style="color:var(--text3)">// Draw random uniform [0, 1]</span><br>
+          &nbsp;&nbsp;<span style="color:#4e7cff">const</span> rand = Math.random();<br><br>
+          &nbsp;&nbsp;<span style="color:#7c5cfc">if</span> (rand &lt; <span style="color:#f5a623">0.90</span>) {<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text3)">// EXPLOIT: best combo (rank 1)</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7c5cfc">return</span> top10[<span style="color:#f5a623">0</span>]; <br>
+          &nbsp;&nbsp;} <span style="color:#7c5cfc">else</span> {<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text3)">// EXPLORE: weighted sample [1..9]</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#4e7cff">const</span> weights = [<span style="color:#3ecf8e">0.30, 0.22, 0.17, 0.13,</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#3ecf8e">0.07, 0.04, 0.03, 0.02, 0.02</span>];<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#7c5cfc">return</span> weightedSample(top10.slice(<span style="color:#f5a623">1</span>), weights);<br>
+          &nbsp;&nbsp;}<br>
+          }<br>
+        </div>
+        <div style="margin-top:1rem;font-size:11px;color:var(--text2)">
+          <div style="font-weight:700;color:var(--text);margin-bottom:6px">Feedback loop → model improvement</div>
+          User responds (or not) → feedback written to event store → next training cycle uses this data → model learns which combo truly works for which user type.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Guardrails -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div>
+        <div class="section-title">Contact Policies & Guardrails</div>
+        <div class="section-desc">Orchestration layer applies these checks before campaign assignment</div>
+      </div>
+    </div>
+    <div class="guard-grid">
+      <div class="guard-card">
+        <div class="guard-icon">📅</div>
+        <div class="guard-title">Daily Frequency Cap</div>
+        <div class="guard-desc">User cannot receive more than 1 campaign per day across all channels and segments.</div>
+        <div class="guard-rule">MAX 1/DAY</div>
+      </div>
+      <div class="guard-card">
+        <div class="guard-icon">📆</div>
+        <div class="guard-title">Weekly Frequency Cap</div>
+        <div class="guard-desc">No more than 3 campaigns per week. Prevents fatigue and ensures unsubscribe rate stays low.</div>
+        <div class="guard-rule">MAX 3/WEEK</div>
+      </div>
+      <div class="guard-card">
+        <div class="guard-icon">🚫</div>
+        <div class="guard-title">Compliance Segment Block</div>
+        <div class="guard-desc">If user is compliance-blocked for a specific segment (FNO/Cash/MF/Commodity), that segment's campaign is suppressed.</div>
+        <div class="guard-rule">SEGMENT CHECK</div>
+      </div>
+      <div class="guard-card">
+        <div class="guard-icon">⏰</div>
+        <div class="guard-title">Optimal Send Time</div>
+        <div class="guard-desc">Message delivered in user's historically highest open-rate time window (personalised per user).</div>
+        <div class="guard-rule">PERSONALISED</div>
+      </div>
+      <div class="guard-card">
+        <div class="guard-icon">🔒</div>
+        <div class="guard-title">DND / Opt-Out Check</div>
+        <div class="guard-desc">Users on Do Not Disturb or who opted out of a channel are excluded from that channel's campaigns.</div>
+        <div class="guard-rule">HARD BLOCK</div>
+      </div>
+      <div class="guard-card">
+        <div class="guard-icon">🔁</div>
+        <div class="guard-title">Cooldown After Conversion</div>
+        <div class="guard-desc">If user converted (activated/reactivated/retained) in last 7 days, suppress further campaign to avoid spam.</div>
+        <div class="guard-rule">7-DAY COOLDOWN</div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- SECTION 5: Night Job Simulator -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <div>
+        <div class="section-title">Night Job Simulator</div>
+        <div class="section-desc">Run the simulated nightly batch job — watch predictions, orchestration, and CleverTap updates happen in real time</div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:0.75rem">
+          <div class="stat-card"><div class="stat-val" id="stat-users" style="color:var(--accent)">0</div><div class="stat-label">Users Scored</div></div>
+          <div class="stat-card"><div class="stat-val" id="stat-assigned" style="color:var(--green)">0</div><div class="stat-label">Campaigns Assigned</div></div>
+          <div class="stat-card"><div class="stat-val" id="stat-blocked" style="color:var(--amber)">0</div><div class="stat-label">Blocked by Policy</div></div>
+        </div>
+        <div class="stats-row" style="grid-template-columns:repeat(2,1fr);margin-bottom:0.75rem">
+          <div class="stat-card"><div class="stat-val" id="stat-explore" style="color:var(--accent2)">0%</div><div class="stat-label">Explore Rate</div></div>
+          <div class="stat-card"><div class="stat-val" id="stat-ibv" style="color:var(--text)">₹0</div><div class="stat-label">Total Predicted IBV</div></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+            <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">Job Execution Log</div>
+            <button class="job-btn" id="run-btn" onclick="runNightJob()"><i class="ti ti-player-play" style="font-size:15px"></i> Run Night Job</button>
+          </div>
+          <div id="progress-wrap" class="progress-wrap" style="display:none"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+          <div class="log-panel" id="log-panel">
+            <div class="log-line"><span class="log-neutral">— Nightly job ready. Click "Run Night Job" to start simulation.</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="height:100%">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem">Sample User Decision Trace</div>
+          <div id="decision-trace" style="font-size:11px;color:var(--text2);min-height:200px">
+            <div style="color:var(--text3);font-style:italic">Decision trace will appear here after running the job...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: 12 Cohorts & CleverTap -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <div>
+        <div class="section-title">12 Campaign Cohorts → CleverTap</div>
+        <div class="section-desc">4 journey types × 4 segments = 12 cohorts updated nightly in CleverTap</div>
+      </div>
+    </div>
+    <div class="cohort-grid" id="cohort-grid">
+      <!-- Activation cohorts -->
+      <div class="cohort-card cc-act">
+        <div class="cohort-type">Activation</div>
+        <div class="cohort-name">ACT_FNO_Campaign</div>
+        <div class="cohort-seg"><span class="tag tag-purple">FNO</span><span class="tag tag-teal">WhatsApp</span><span class="tag tag-amber">Offer</span></div>
+        <div class="cohort-stat">Users: <strong id="c1-count">—</strong> &nbsp;|&nbsp; Avg IBV: <strong id="c1-ibv">—</strong></div>
+      </div>
+      <div class="cohort-card cc-act">
+        <div class="cohort-type">Activation</div>
+        <div class="cohort-name">ACT_CASH_Campaign</div>
+        <div class="cohort-seg"><span class="tag tag-green">Cash</span><span class="tag tag-teal">In-App</span><span class="tag tag-teal">Education</span></div>
+        <div class="cohort-stat">Users: <strong id="c2-count">—</strong> &nbsp;|&nbsp; Avg IBV: <strong id="c2-ibv">—</strong></div>
+      </div>
+      <div class="cohort-card cc-act">
+        <div class="cohort-type">Activation</div>
+        <div class="cohort-name">ACT_MF_Campaign</div>
+        <div class="cohort-seg"><span class="tag tag-amber">MF</span><span class="tag tag-blue">Push Notif.</span><span class="tag tag-teal">Awareness</span></div>
+        <div class="cohort-stat">Users: <strong id="c3-count">—</strong> &nbsp;|&nbsp; Avg IBV: <strong id="c3-ibv">—</strong></div>
+      </div>
+      <div class="cohort-card cc-act">
+        <div class="cohort-type">Activation</div>
+        <div class="cohort-name">ACT_COMM_Campaign</div>
+        <div class="cohort-seg"><span class="tag tag-red">Commodity</span><span class="tag tag-teal">WhatsApp</span><span class="tag tag-amber">Offer</span></div>
+        <div class="cohort-stat">Users: <strong id="c4-count">—</strong> &nbsp;|&nbsp; Avg IBV: <strong id="c4-ibv">—</strong></div>
+      </div>
+      <!-- Reactivation -->
+      <div class="cohort-card cc-rea">
+        <div class="cohort-type">Reactivation</div>
+        <div class="cohort-name">REA_FNO_Campaign</div>
+        <div class="cohort-seg"><span class="tag tag-purple">FNO</span><span class="tag tag-teal">WhatsApp</span><span class="tag tag-amber">Offer</span></div>
+        <div class="cohort-stat">Users: <strong id="c5-count">—</strong> &nbsp;|&nbsp; Avg IBV: <strong id="c5-ibv">—</strong></div>
+      </div>
+      <div class="cohort-card cc-rea">
+        <div class="cohort-type">Reactivation</div>
+        <div class="cohort-name">REA_CASH_Campaign</div>
+        <div class="cohort-seg"><span class="tag tag-green">Cash</span><span class="tag tag-blue">Push Notif.</span><span class="tag tag-teal">Education</span></div>
+        <div class="cohort-stat">Users: <strong id="c6-count">—</strong> &nbsp;|&nbsp; Avg IBV: <strong id="c6-ibv">—</strong></div>
+      </div>
+      <div class="cohort-card cc-rea">
+        <div class="cohort-type">Reactivation</div>
+        <div class="cohort-name">REA_MF_Campaign</div>
+        <div class="cohort-seg"><span class="tag tag-amber">MF</span><span class="tag tag-teal">In-App</span><span class="tag tag-amber">Offer</span></div>
+        <div class="cohort-stat">Users: <strong id="c7-count">—</strong> &nbsp;|&nbsp; Avg IBV: <strong id="c7-ibv">—</strong></div>
+      </div>
+      <div class="cohort-card cc-rea">
+        <div class="cohort-type">Reactivation</div>
+        <div class="cohort-name">REA_COMM_Campaign</div>
+        <div class="cohort-seg"><span class="tag tag-red">Commodity</span><span class="tag tag-blue">Push Notif.</span><span class="tag tag-teal">Awareness</span></div>
+        <div class="cohort-stat">Users: <strong id="c8-count">—</strong> &nbsp;|&nbsp; Avg IBV: <strong id="c8-ibv">—</strong></div>
+      </div>
+      <!-- Retention -->
+      <div class="cohort-card cc-ret">
+        <div class="cohort-type">Retention</div>
+        <div class="cohort-name">RET_FNO_Campaign</div>
+        <div class="cohort-seg"><span class="tag tag-purple">FNO</span><span class="tag tag-teal">In-App</span><span class="tag tag-teal">Education</span></div>
+        <div class="cohort-stat">Users: <strong id="c9-count">—</strong> &nbsp;|&nbsp; Avg IBV: <strong id="c9-ibv">—</strong></div>
+      </div>
+      <div class="cohort-card cc-ret">
+        <div class="cohort-type">Retention</div>
+        <div class="cohort-name">RET_CASH_Campaign</div>
+        <div class="cohort-seg"><span class="tag tag-green">Cash</span><span class="tag tag-teal">WhatsApp</span><span class="tag tag-amber">Offer</span></div>
+        <div class="cohort-stat">Users: <strong id="c10-count">—</strong> &nbsp;|&nbsp; Avg IBV: <strong id="c10-ibv">—</strong></div>
+      </div>
+      <div class="cohort-card cc-ret">
+        <div class="cohort-type">Retention</div>
+        <div class="cohort-name">RET_MF_Campaign</div>
+        <div class="cohort-seg"><span class="tag tag-amber">MF</span><span class="tag tag-blue">Push Notif.</span><span class="tag tag-teal">Awareness</span></div>
+        <div class="cohort-stat">Users: <strong id="c11-count">—</strong> &nbsp;|&nbsp; Avg IBV: <strong id="c11-ibv">—</strong></div>
+      </div>
+      <div class="cohort-card cc-ret">
+        <div class="cohort-type">Retention</div>
+        <div class="cohort-name">RET_COMM_Campaign</div>
+        <div class="cohort-seg"><span class="tag tag-red">Commodity</span><span class="tag tag-teal">WhatsApp</span><span class="tag tag-amber">Offer</span></div>
+        <div class="cohort-stat">Users: <strong id="c12-count">—</strong> &nbsp;|&nbsp; Avg IBV: <strong id="c12-ibv">—</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 7: CleverTap Update -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <div>
+        <div class="section-title">CleverTap Integration</div>
+        <div class="section-desc">Cohorts pushed via CleverTap API — campaigns are ready to execute</div>
+      </div>
+    </div>
+    <div class="ct-panel">
+      <div class="ct-header">
+        <div class="ct-logo">CT</div>
+        <div>
+          <div class="ct-title">CleverTap Campaign Dashboard</div>
+          <div class="ct-subtitle">12 campaign cohorts — updated nightly at 05:00 AM</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div id="ct-status" style="font-size:12px;color:var(--text3)">Awaiting job run...</div>
+          <div id="ct-time" style="font-size:10px;color:var(--text3)"></div>
+        </div>
+      </div>
+      <div class="ct-campaigns" id="ct-campaigns">
+        <div style="font-size:12px;color:var(--text3);font-style:italic;padding:1rem 0">Run the night job to populate CleverTap campaign cohorts...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// === Prediction table ===
+const segVals = { FNO: 7000, Cash: 2000, MF: 1500, Comm: 2500 };
+const segColors = { FNO: 'tag-purple', Cash: 'tag-green', MF: 'tag-amber', Comm: 'tag-red' };
+const channelIcons = { WA: 'ti-brand-whatsapp', PN: 'ti-bell', IA: 'ti-message' };
+const channelLabels = { WA: 'WhatsApp', PN: 'Push', IA: 'In-App' };
+const journeyColors = { activation: 'tag-blue', reactivation: 'tag-green', retention: 'tag-amber' };
+
+function randBetween(a, b) { return a + Math.random() * (b - a); }
+
+function genPredRows(userId, journey) {
+  const pBase = randBetween(0.08, 0.30);
+  const channels = ['WA', 'PN', 'IA'];
+  const segments = ['FNO', 'Cash', 'MF', 'Comm'];
+  const creatives = ['Offer', 'Aware', 'Edu'];
+  let rows = [];
+  channels.forEach(ch => segments.forEach(sg => creatives.forEach(cr => {
+    const pWith = Math.min(0.9, pBase + randBetween(0.05, 0.22));
+    const uplift = pWith - pBase;
+    const ibv = Math.round(uplift * segVals[sg] * randBetween(0.7, 1.1));
+    rows.push({ userId, journey, ch, sg, cr, pBase, pWith, uplift, ibv });
+  })));
+  rows.sort((a,b) => b.ibv - a.ibv);
+  return rows.slice(0, 10);
+}
+
+// Populate prediction table
+const tbody = document.getElementById('pred-tbody');
+const sampleUser = 'USR_' + Math.floor(1000000 + Math.random() * 9000000);
+const rows = genPredRows(sampleUser, 'activation');
+rows.forEach((r, i) => {
+  const tr = document.createElement('tr');
+  if (i === 0) tr.className = 'rank1';
+  tr.innerHTML = `
+    <td><span class="rank-badge ${i===0?'rank1-badge':'rank-other'}">${i+1}</span></td>
+    <td style="font-family:monospace;font-size:10px;color:var(--text2)">${r.userId}</td>
+    <td><span class="tag ${journeyColors[r.journey]}">${r.journey}</span></td>
+    <td><span class="tag tag-teal"><i class="ti ${channelIcons[r.ch]}" style="font-size:10px"></i> ${channelLabels[r.ch]}</span></td>
+    <td><span class="tag ${segColors[r.sg]}">${r.sg}</span></td>
+    <td style="font-size:10px;color:var(--text2)">${r.cr}</td>
+    <td style="color:var(--text3)">${(r.pBase*100).toFixed(1)}%</td>
+    <td style="color:${i===0?'var(--accent)':'var(--text2)'}">${(r.pWith*100).toFixed(1)}%</td>
+    <td style="color:var(--green)">+${(r.uplift*100).toFixed(1)}%</td>
+    <td>₹${segVals[r.sg].toLocaleString()}</td>
+    <td style="font-weight:700;color:${i===0?'var(--green)':'var(--text)'}">₹${r.ibv.toLocaleString()}</td>
+  `;
+  tbody.appendChild(tr);
+});
+
+// === Night Job Simulation ===
+let jobRunning = false;
+function log(cls, msg) {
+  const panel = document.getElementById('log-panel');
+  const d = new Date();
+  const time = d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')+':'+d.getSeconds().toString().padStart(2,'0');
+  panel.innerHTML += `<div class="log-line"><span class="log-time">[${time}]</span> <span class="${cls}">${msg}</span></div>`;
+  panel.scrollTop = panel.scrollHeight;
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function runNightJob() {
+  if (jobRunning) return;
+  jobRunning = true;
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader spin" style="font-size:15px"></i> Running...';
+  document.getElementById('log-panel').innerHTML = '';
+  document.getElementById('progress-wrap').style.display = 'block';
+
+  const setProgress = (p) => document.getElementById('progress-bar').style.width = p + '%';
+  
+  const totalUsers = 4823;
+  
+  log('log-info', '🌙 Night job initiated — Campaign Automation Engine v2.4');
+  await sleep(400);
+  log('log-neutral', '├─ Environment: PRODUCTION');
+  log('log-neutral', '├─ Date: ' + new Date().toISOString().split('T')[0]);
+  log('log-neutral', '└─ Scheduled start: 02:00 AM IST');
+  await sleep(500);
+  
+  log('log-info', '📦 [STEP 1] Feature Store Snapshot');
+  setProgress(10);
+  await sleep(600);
+  log('log-neutral', '├─ Pulling user behaviour signals...');
+  await sleep(400);
+  log('log-success', `└─ ✓ ${totalUsers.toLocaleString()} users loaded from feature store`);
+  await sleep(300);
+  
+  log('log-info', '🧠 [STEP 2] XGBoost Batch Inference');
+  setProgress(30);
+  await sleep(500);
+  log('log-neutral', '├─ Activation model: scoring...');
+  await sleep(700);
+  log('log-success', '├─ ✓ Activation model complete — 1,204 users scored');
+  await sleep(300);
+  log('log-neutral', '├─ Reactivation model: scoring...');
+  await sleep(700);
+  log('log-success', '├─ ✓ Reactivation model complete — 2,117 users scored');
+  await sleep(300);
+  log('log-neutral', '├─ Retention model: scoring...');
+  await sleep(700);
+  log('log-success', '└─ ✓ Retention model complete — 1,502 users scored');
+  setProgress(50);
+  await sleep(300);
+  
+  log('log-info', '📊 [STEP 3] Prediction Table Creation');
+  await sleep(500);
+  log('log-neutral', '├─ Computing IBV for all 36 combos per user...');
+  await sleep(800);
+  log('log-neutral', '├─ Ranking top 10 per user...');
+  await sleep(500);
+  log('log-success', `└─ ✓ Prediction table written: ${(totalUsers*10).toLocaleString()} rows`);
+  setProgress(65);
+  await sleep(300);
+  
+  log('log-info', '⚙️  [STEP 4] Orchestration Layer');
+  await sleep(400);
+  const explored = Math.floor(totalUsers * 0.10 * (0.9 + Math.random() * 0.2));
+  const blocked = Math.floor(totalUsers * (0.04 + Math.random() * 0.04));
+  const assigned = totalUsers - blocked;
+  log('log-neutral', '├─ Applying ε-greedy (90/10)...');
+  await sleep(600);
+  log('log-neutral', `├─ Exploit (rank 1): ${(assigned - explored).toLocaleString()} users`);
+  log('log-neutral', `├─ Explore (ranks 2–10): ${explored.toLocaleString()} users (${(explored/totalUsers*100).toFixed(1)}%)`);
+  await sleep(400);
+  log('log-neutral', '├─ Checking contact policies...');
+  await sleep(500);
+  log('log-warn', `├─ ⚠  ${Math.floor(blocked*0.4).toLocaleString()} users hit daily cap (1/day rule)`);
+  log('log-warn', `├─ ⚠  ${Math.floor(blocked*0.3).toLocaleString()} users hit weekly cap (3/week rule)`);
+  log('log-warn', `├─ ⚠  ${Math.floor(blocked*0.3).toLocaleString()} users blocked by compliance/segment`);
+  log('log-success', `└─ ✓ ${assigned.toLocaleString()} users assigned campaigns`);
+  setProgress(80);
+  await sleep(400);
+  
+  // Update stats
+  document.getElementById('stat-users').textContent = totalUsers.toLocaleString();
+  document.getElementById('stat-assigned').textContent = assigned.toLocaleString();
+  document.getElementById('stat-blocked').textContent = blocked.toLocaleString();
+  document.getElementById('stat-explore').textContent = (explored/totalUsers*100).toFixed(1) + '%';
+  const totalIBV = Math.floor(assigned * 680 * (0.9 + Math.random() * 0.2));
+  document.getElementById('stat-ibv').textContent = '₹' + (totalIBV/100000).toFixed(1) + 'L';
+  
+  // Decision trace
+  const sampleTrace = genPredRows('USR_' + Math.floor(1000000 + Math.random() * 9000000), 'reactivation');
+  const best = sampleTrace[0];
+  const isExplore = Math.random() < 0.10;
+  const chosen = isExplore ? sampleTrace[Math.floor(1 + Math.random() * 8)] : best;
+  document.getElementById('decision-trace').innerHTML = `
+    <div style="margin-bottom:0.875rem"><span style="color:var(--accent);font-weight:700">Sample User: ${chosen.userId}</span></div>
+    <div style="font-size:11px;color:var(--text2);line-height:2">
+      Journey type: <span style="color:var(--text)">Reactivation</span><br>
+      Top-1 combo (IBV): <span class="tag ${segColors[best.sg]}">${best.sg}</span> + <span class="tag tag-teal">${channelLabels[best.ch]}</span> + ${best.cr} → <strong style="color:var(--green)">₹${best.ibv.toLocaleString()}</strong><br>
+      ε-greedy draw: <strong style="color:${isExplore?'var(--accent2)':'var(--amber)'}">rand = ${(isExplore?0.05+Math.random()*0.05:0.1+Math.random()*0.8).toFixed(3)}</strong> → <strong style="color:${isExplore?'var(--accent2)':'var(--amber)'}">${isExplore?'EXPLORE':'EXPLOIT'}</strong><br>
+      ${isExplore?`Explore selected: <span class="tag ${segColors[chosen.sg]}">${chosen.sg}</span> + ${channelLabels[chosen.ch]} (Rank ${sampleTrace.indexOf(chosen)+1})`:`Best combo selected: <span class="tag ${segColors[chosen.sg]}">${chosen.sg}</span> + ${channelLabels[chosen.ch]} (Rank 1)`}<br>
+      Daily cap check: <span style="color:var(--green)">✓ PASS</span><br>
+      Weekly cap check: <span style="color:var(--green)">✓ PASS (2/3 used this week)</span><br>
+      Compliance block: <span style="color:var(--green)">✓ PASS (no blocks)</span><br>
+      DND window: <span style="color:var(--green)">✓ PASS</span><br>
+      Assigned to cohort: <strong style="color:var(--accent)">REA_${chosen.sg}_Campaign</strong><br>
+      Scheduled send time: <strong style="color:var(--text)">09:30 AM</strong> (user's peak open window)
+    </div>
+  `;
+  
+  await sleep(400);
+  log('log-info', '📡 [STEP 5] CleverTap Cohort Update');
+  setProgress(90);
+  await sleep(500);
+  
+  // Build cohort distribution
+  const cohortCounts = [142,98,87,65,234,187,145,112,198,165,132,108];
+  const cohortIBVs = [820,380,245,420,960,440,290,510,740,390,270,480];
+  for (let i=1; i<=12; i++) {
+    await sleep(150);
+    document.getElementById(`c${i}-count`).textContent = cohortCounts[i-1].toLocaleString();
+    document.getElementById(`c${i}-ibv`).textContent = '₹' + cohortIBVs[i-1];
+    log('log-success', `├─ ✓ Cohort ${i}/12 pushed to CleverTap (${cohortCounts[i-1]} users)`);
+  }
+  
+  await sleep(300);
+  log('log-success', '└─ ✓ All 12 cohorts updated in CleverTap');
+  setProgress(100);
+  await sleep(400);
+  
+  log('log-info', '✅ Night job COMPLETE — Total runtime: 2h 58m');
+  
+  // Update CleverTap panel
+  document.getElementById('ct-status').textContent = '✅ All 12 cohorts updated';
+  document.getElementById('ct-status').style.color = 'var(--green)';
+  document.getElementById('ct-time').textContent = 'Completed at ' + new Date().toLocaleTimeString('en-IN');
+  
+  const campNames = [
+    ['ACT_FNO','Activation FNO Campaign',cohortCounts[0],'status-ready'],
+    ['ACT_CASH','Activation Cash Campaign',cohortCounts[1],'status-ready'],
+    ['ACT_MF','Activation MF Campaign',cohortCounts[2],'status-sched'],
+    ['ACT_COMM','Activation Commodity Campaign',cohortCounts[3],'status-sched'],
+    ['REA_FNO','Reactivation FNO Campaign',cohortCounts[4],'status-ready'],
+    ['REA_CASH','Reactivation Cash Campaign',cohortCounts[5],'status-ready'],
+    ['REA_MF','Reactivation MF Campaign',cohortCounts[6],'status-sched'],
+    ['REA_COMM','Reactivation Commodity Campaign',cohortCounts[7],'status-queued'],
+    ['RET_FNO','Retention FNO Campaign',cohortCounts[8],'status-ready'],
+    ['RET_CASH','Retention Cash Campaign',cohortCounts[9],'status-ready'],
+    ['RET_MF','Retention MF Campaign',cohortCounts[10],'status-sched'],
+    ['RET_COMM','Retention Commodity Campaign',cohortCounts[11],'status-queued'],
+  ];
+  const statusLabels = { 'status-ready': 'Ready', 'status-sched': 'Scheduled', 'status-queued': 'Queued' };
+  document.getElementById('ct-campaigns').innerHTML = campNames.map((c,i) => `
+    <div class="ct-campaign-row">
+      <div class="ct-campaign-num">${(i+1).toString().padStart(2,'0')}</div>
+      <div class="ct-campaign-name">${c[1]}</div>
+      <div class="ct-campaign-meta">
+        <span class="ct-count">${c[2]} users</span>
+        <span class="ct-status ${c[3]}">${statusLabels[c[3]]}</span>
+      </div>
+    </div>
+  `).join('');
+  
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-refresh" style="font-size:15px"></i> Run Again';
+  jobRunning = false;
+}
+</script>
+</body>
+</html>

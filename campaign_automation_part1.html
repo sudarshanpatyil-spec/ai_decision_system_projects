@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campaign Automation – Part 1: Model Training</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --bg2: #0e1628;
+    --bg3: #131d35;
+    --card: #0f1a2e;
+    --card2: #162034;
+    --border: rgba(100,140,255,0.12);
+    --border2: rgba(100,140,255,0.22);
+    --accent: #4e7cff;
+    --accent2: #7c5cfc;
+    --teal: #00d4aa;
+    --amber: #f5a623;
+    --red: #ff5a5a;
+    --green: #3ecf8e;
+    --text: #e8edf8;
+    --text2: #8a9bbf;
+    --text3: #5a6880;
+    --font: 'Inter', system-ui, sans-serif;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+  
+  /* Header */
+  .header { background: linear-gradient(135deg, #0a0f1e 0%, #0e1a35 100%); border-bottom: 1px solid var(--border2); padding: 0 2rem; position: sticky; top: 0; z-index: 100; }
+  .header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 1rem; height: 60px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+  .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .part-badge { background: rgba(78,124,255,0.15); border: 1px solid rgba(78,124,255,0.3); color: var(--accent); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px; }
+  .nav { display: flex; gap: 4px; margin-left: auto; }
+  .nav-btn { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s; background: transparent; color: var(--text2); }
+  .nav-btn:hover, .nav-btn.active { background: rgba(78,124,255,0.15); color: var(--accent); }
+
+  /* Layout */
+  .page { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+  .page-title { font-size: 26px; font-weight: 700; margin-bottom: 4px; background: linear-gradient(135deg, var(--text), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .page-subtitle { color: var(--text2); font-size: 14px; margin-bottom: 2rem; }
+
+  /* Section */
+  .section { margin-bottom: 2.5rem; }
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; }
+  .section-num { width: 28px; height: 28px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .section-title { font-size: 16px; font-weight: 600; }
+  .section-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  /* Cards */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+  .card-sm { background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+  /* Feature signals */
+  .signal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  .signal-item { background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.875rem; display: flex; align-items: flex-start; gap: 10px; transition: border-color 0.2s, transform 0.2s; cursor: default; }
+  .signal-item:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .signal-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
+  .signal-name { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .signal-desc { font-size: 11px; color: var(--text3); }
+  .signal-importance { font-size: 10px; font-weight: 600; margin-top: 4px; padding: 1px 6px; border-radius: 4px; display: inline-block; }
+  .imp-high { background: rgba(62,207,142,0.15); color: var(--green); }
+  .imp-med { background: rgba(245,166,35,0.15); color: var(--amber); }
+  .imp-low { background: rgba(138,155,191,0.15); color: var(--text2); }
+  .si-blue { background: rgba(78,124,255,0.15); color: var(--accent); }
+  .si-teal { background: rgba(0,212,170,0.15); color: var(--teal); }
+  .si-amber { background: rgba(245,166,35,0.15); color: var(--amber); }
+  .si-purple { background: rgba(124,92,252,0.15); color: var(--accent2); }
+  .si-red { background: rgba(255,90,90,0.15); color: var(--red); }
+  .si-green { background: rgba(62,207,142,0.15); color: var(--green); }
+
+  /* Model arch diagram */
+  .arch-flow { display: flex; align-items: center; gap: 0; overflow-x: auto; padding: 1rem 0; }
+  .arch-box { background: var(--card2); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 0.75rem 1rem; text-align: center; min-width: 140px; flex-shrink: 0; }
+  .arch-box-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .arch-box-items { font-size: 11px; color: var(--text2); line-height: 1.8; }
+  .arch-arrow { color: var(--border2); font-size: 20px; padding: 0 8px; flex-shrink: 0; display: flex; align-items: center; }
+  .arch-output { background: linear-gradient(135deg, rgba(78,124,255,0.1), rgba(124,92,252,0.1)); border-color: rgba(78,124,255,0.3); }
+
+  /* Target types */
+  .target-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  .target-card { background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; position: relative; overflow: hidden; }
+  .target-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 4px 4px 0 0; }
+  .tc-blue::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .tc-green::before { background: linear-gradient(90deg, var(--green), var(--teal)); }
+  .tc-amber::before { background: linear-gradient(90deg, var(--amber), #ff9a3c); }
+  .target-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text2); margin-bottom: 6px; }
+  .target-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .target-desc { font-size: 11px; color: var(--text2); }
+  .target-formula { font-size: 11px; color: var(--teal); background: rgba(0,212,170,0.08); border: 1px solid rgba(0,212,170,0.15); border-radius: 6px; padding: 6px 10px; margin-top: 8px; font-family: 'Courier New', monospace; }
+
+  /* User simulator */
+  .sim-container { display: grid; grid-template-columns: 320px 1fr; gap: 1.25rem; }
+  .sim-inputs { display: flex; flex-direction: column; gap: 0.75rem; }
+  .sim-input-group { }
+  .sim-label { font-size: 11px; color: var(--text2); font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .sim-label span { color: var(--text); font-weight: 700; }
+  input[type=range] { width: 100%; height: 4px; accent-color: var(--accent); background: var(--border); border-radius: 2px; outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; }
+  input[type=range]::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; background: var(--accent); border-radius: 50%; cursor: pointer; }
+  .sim-select { background: var(--card2); border: 1px solid var(--border2); border-radius: 6px; color: var(--text); font-size: 12px; padding: 6px 10px; width: 100%; outline: none; cursor: pointer; }
+  .sim-select option { background: var(--card2); }
+
+  /* Prediction output */
+  .pred-panel { background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+  .pred-user-id { font-size: 11px; color: var(--text2); margin-bottom: 1rem; font-family: monospace; }
+  .prob-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .prob-label { font-size: 11px; color: var(--text2); width: 200px; flex-shrink: 0; }
+  .prob-bar-wrap { flex: 1; background: var(--bg3); border-radius: 4px; height: 10px; overflow: hidden; }
+  .prob-bar { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+  .prob-val { font-size: 12px; font-weight: 700; width: 42px; text-align: right; }
+  .uplift-box { background: linear-gradient(135deg, rgba(78,124,255,0.08), rgba(124,92,252,0.08)); border: 1px solid rgba(78,124,255,0.2); border-radius: var(--radius-sm); padding: 0.875rem; margin-top: 1rem; }
+  .uplift-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .uplift-label { font-size: 12px; color: var(--text2); }
+  .uplift-value { font-size: 14px; font-weight: 700; }
+  .uplift-total { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 8px; }
+  .uplift-total .uplift-label { color: var(--text); font-weight: 600; font-size: 13px; }
+  .uplift-total .uplift-value { font-size: 18px; color: var(--green); }
+  .combo-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; }
+  .combo-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+  /* Model metrics */
+  .metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
+  .metric-card { background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; text-align: center; }
+  .metric-val { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, var(--text), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .metric-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .metric-delta { font-size: 11px; color: var(--green); margin-top: 2px; }
+
+  /* Combo grid (36) */
+  .combo-36 { display: grid; grid-template-columns: repeat(9, 1fr); gap: 3px; }
+  .combo-cell { background: var(--card2); border: 1px solid var(--border); border-radius: 4px; padding: 4px 2px; text-align: center; font-size: 9px; color: var(--text2); transition: all 0.3s; cursor: pointer; }
+  .combo-cell:hover { border-color: var(--border2); }
+  .combo-cell.best { background: linear-gradient(135deg, rgba(78,124,255,0.2), rgba(124,92,252,0.2)); border-color: rgba(78,124,255,0.5); color: var(--text); }
+  .combo-cell.top3 { background: rgba(62,207,142,0.1); border-color: rgba(62,207,142,0.3); color: var(--green); }
+  .combo-cell.mid { background: rgba(245,166,35,0.08); border-color: rgba(245,166,35,0.2); }
+
+  /* Feature importance chart */
+  #fi-chart-wrap { position: relative; width: 100%; height: 260px; }
+
+  /* Steps */
+  .step-flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; position: relative; }
+  .step-item { display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; }
+  .step-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; border: 2px solid; flex-shrink: 0; position: relative; z-index: 2; }
+  .step-connector { position: absolute; top: 20px; left: 50%; right: -50%; height: 2px; background: var(--border2); z-index: 1; }
+  .step-item:last-child .step-connector { display: none; }
+  .step-label { font-size: 11px; color: var(--text2); margin-top: 8px; font-weight: 500; }
+
+  /* Tag */
+  .tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; }
+  .tag-blue { background: rgba(78,124,255,0.15); color: var(--accent); border: 1px solid rgba(78,124,255,0.25); }
+  .tag-green { background: rgba(62,207,142,0.15); color: var(--green); border: 1px solid rgba(62,207,142,0.25); }
+  .tag-amber { background: rgba(245,166,35,0.15); color: var(--amber); border: 1px solid rgba(245,166,35,0.25); }
+  .tag-purple { background: rgba(124,92,252,0.15); color: var(--accent2); border: 1px solid rgba(124,92,252,0.25); }
+  .tag-red { background: rgba(255,90,90,0.15); color: var(--red); border: 1px solid rgba(255,90,90,0.25); }
+  .tag-teal { background: rgba(0,212,170,0.15); color: var(--teal); border: 1px solid rgba(0,212,170,0.25); }
+
+  /* Run button */
+  .run-btn { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: opacity 0.2s, transform 0.1s; }
+  .run-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .run-btn:active { transform: scale(0.98); }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+  /* Tooltip pill */
+  .info-pill { background: rgba(78,124,255,0.08); border: 1px solid rgba(78,124,255,0.2); border-radius: 8px; padding: 0.75rem 1rem; font-size: 12px; color: var(--text2); display: flex; gap: 10px; align-items: flex-start; }
+  .info-pill i { color: var(--accent); margin-top: 1px; flex-shrink: 0; }
+
+  /* Segment value table */
+  .seg-table { width: 100%; border-collapse: collapse; }
+  .seg-table th { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  .seg-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .seg-table tr:last-child td { border-bottom: none; }
+  .seg-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* Pulse animation */
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .pulse { animation: pulse 2s ease-in-out infinite; }
+
+  /* Glow */
+  .glow-accent { box-shadow: 0 0 20px rgba(78,124,255,0.2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon"><i class="ti ti-brain" style="color:white;font-size:18px"></i></div>
+      <span>Campaign Automation Engine</span>
+    </div>
+    <span class="part-badge">PART 1 — MODEL TRAINING & PREDICTION</span>
+    <nav class="nav">
+      <button class="nav-btn active">Training</button>
+      <button class="nav-btn" onclick="window.open('campaign_automation_part2.html')">Part 2: Night Job →</button>
+    </nav>
+  </div>
+</div>
+
+<div class="page">
+  <div class="page-title">XGBoost Campaign ML Model</div>
+  <div class="page-subtitle">Feature engineering, model architecture, and probability predictions for 36-combination campaign optimization</div>
+
+  <!-- SECTION 1: Training Pipeline -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div>
+        <div class="section-title">Model Training Pipeline</div>
+        <div class="section-desc">End-to-end flow from raw user data to trained XGBoost models</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="step-flow">
+        <div class="step-item">
+          <div class="step-circle" style="background:rgba(78,124,255,0.15);border-color:var(--accent);color:var(--accent)">1</div>
+          <div class="step-connector"></div>
+          <div class="step-label">Raw User<br>Data Collection</div>
+        </div>
+        <div class="step-item">
+          <div class="step-circle" style="background:rgba(0,212,170,0.15);border-color:var(--teal);color:var(--teal)">2</div>
+          <div class="step-connector"></div>
+          <div class="step-label">Feature<br>Engineering</div>
+        </div>
+        <div class="step-item">
+          <div class="step-circle" style="background:rgba(245,166,35,0.15);border-color:var(--amber);color:var(--amber)">3</div>
+          <div class="step-connector"></div>
+          <div class="step-label">Label Creation<br>(Historical)</div>
+        </div>
+        <div class="step-item">
+          <div class="step-circle" style="background:rgba(124,92,252,0.15);border-color:var(--accent2);color:var(--accent2)">4</div>
+          <div class="step-connector"></div>
+          <div class="step-label">XGBoost<br>Training (3 models)</div>
+        </div>
+        <div class="step-item">
+          <div class="step-circle" style="background:rgba(62,207,142,0.15);border-color:var(--green);color:var(--green)">5</div>
+          <div class="step-label">Prediction<br>Output</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Input Features -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div>
+        <div class="section-title">Input Feature Signals</div>
+        <div class="section-desc">Behavioural and profile signals used for model training</div>
+      </div>
+    </div>
+    <div class="signal-grid">
+      <!-- Behavioural signals -->
+      <div class="signal-item"><div class="signal-icon si-blue"><i class="ti ti-activity" style="font-size:16px"></i></div><div><div class="signal-name">Login Frequency</div><div class="signal-desc">Days active last 30 days</div><div class="signal-importance imp-high">HIGH IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-blue"><i class="ti ti-chart-candle" style="font-size:16px"></i></div><div><div class="signal-name">Last Trade Date</div><div class="signal-desc">Days since last transaction</div><div class="signal-importance imp-high">HIGH IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-blue"><i class="ti ti-clock" style="font-size:16px"></i></div><div><div class="signal-name">Session Duration</div><div class="signal-desc">Avg time per session (mins)</div><div class="signal-importance imp-med">MED IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-teal"><i class="ti ti-search" style="font-size:16px"></i></div><div><div class="signal-name">Product Views</div><div class="signal-desc">FNO / MF / Cash pages viewed</div><div class="signal-importance imp-high">HIGH IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-teal"><i class="ti ti-wallet" style="font-size:16px"></i></div><div><div class="signal-name">Funds Added</div><div class="signal-desc">Wallet top-up frequency</div><div class="signal-importance imp-high">HIGH IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-teal"><i class="ti ti-eye" style="font-size:16px"></i></div><div><div class="signal-name">Notification Open Rate</div><div class="signal-desc">Push / in-app engagement</div><div class="signal-importance imp-med">MED IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-amber"><i class="ti ti-user-check" style="font-size:16px"></i></div><div><div class="signal-name">KYC Status</div><div class="signal-desc">Verified / Partial / Pending</div><div class="signal-importance imp-high">HIGH IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-amber"><i class="ti ti-building-bank" style="font-size:16px"></i></div><div><div class="signal-name">Account Age</div><div class="signal-desc">Days since registration</div><div class="signal-importance imp-med">MED IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-amber"><i class="ti ti-device-mobile" style="font-size:16px"></i></div><div><div class="signal-name">Device Type</div><div class="signal-desc">Android / iOS / Web</div><div class="signal-importance imp-low">LOW IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-purple"><i class="ti ti-percentage" style="font-size:16px"></i></div><div><div class="signal-name">Watchlist Activity</div><div class="signal-desc">Stocks / instruments tracked</div><div class="signal-importance imp-med">MED IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-purple"><i class="ti ti-message-circle" style="font-size:16px"></i></div><div><div class="signal-name">Past Campaign Response</div><div class="signal-desc">Historical click / conversion</div><div class="signal-importance imp-high">HIGH IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-purple"><i class="ti ti-trending-up" style="font-size:16px"></i></div><div><div class="signal-name">Market Volatility Exposure</div><div class="signal-desc">VIX tracking behaviour</div><div class="signal-importance imp-low">LOW IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-green"><i class="ti ti-map-pin" style="font-size:16px"></i></div><div><div class="signal-name">City / Region</div><div class="signal-desc">Metro vs non-metro</div><div class="signal-importance imp-low">LOW IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-green"><i class="ti ti-currency-rupee" style="font-size:16px"></i></div><div><div class="signal-name">Net Worth Estimate</div><div class="signal-desc">Derived from portfolio value</div><div class="signal-importance imp-med">MED IMPORTANCE</div></div></div>
+      <div class="signal-item"><div class="signal-icon si-red"><i class="ti ti-star" style="font-size:16px"></i></div><div><div class="signal-name">Referral Status</div><div class="signal-desc">Referred user / referrer</div><div class="signal-importance imp-low">LOW IMPORTANCE</div></div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: 3 Models -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div>
+        <div class="section-title">Three Prediction Models</div>
+        <div class="section-desc">Separate XGBoost models trained for each user lifecycle stage</div>
+      </div>
+    </div>
+    <div class="target-grid">
+      <div class="target-card tc-blue">
+        <div class="target-label"><i class="ti ti-user-plus" style="font-size:11px"></i> Model 1</div>
+        <div class="target-title">Activation Model</div>
+        <div class="target-desc">Users who registered but never made a transaction. Predicts first trade probability.</div>
+        <div class="target-formula">P(activation | no campaign)<br>P(activation | campaign combo[i])<br>for i in 1..36</div>
+      </div>
+      <div class="target-card tc-green">
+        <div class="target-label"><i class="ti ti-refresh" style="font-size:11px"></i> Model 2</div>
+        <div class="target-title">Reactivation Model</div>
+        <div class="target-desc">Previously active users dormant 30+ days. Predicts return to trading probability.</div>
+        <div class="target-formula">P(reactivation | no campaign)<br>P(reactivation | campaign combo[i])<br>for i in 1..36</div>
+      </div>
+      <div class="target-card tc-amber">
+        <div class="target-label"><i class="ti ti-heart" style="font-size:11px"></i> Model 3</div>
+        <div class="target-title">Retention Model</div>
+        <div class="target-desc">Active users at churn risk. Predicts continued engagement over next 30 days.</div>
+        <div class="target-formula">P(retention | no campaign)<br>P(retention | campaign combo[i])<br>for i in 1..36</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: 36 Combinations -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div>
+        <div class="section-title">36 Campaign Combinations</div>
+        <div class="section-desc">Every combination of Channel × Segment × Creative evaluated per user</div>
+      </div>
+    </div>
+    <div class="grid-2" style="gap:1rem">
+      <div class="card">
+        <div style="font-size:12px;font-weight:700;margin-bottom:1rem;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">3 Channels × 4 Segments × 3 Creatives = 36</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:1rem">
+          <div>
+            <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:6px">Channels</div>
+            <div class="tag tag-blue" style="display:flex;margin-bottom:4px;"><i class="ti ti-brand-whatsapp" style="font-size:11px"></i>WhatsApp</div>
+            <div class="tag tag-blue" style="display:flex;margin-bottom:4px;"><i class="ti ti-bell" style="font-size:11px"></i>Push Notif.</div>
+            <div class="tag tag-blue" style="display:flex;"><i class="ti ti-message" style="font-size:11px"></i>In-App</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:6px">Segments</div>
+            <div class="tag tag-purple" style="display:flex;margin-bottom:4px;">FNO</div>
+            <div class="tag tag-green" style="display:flex;margin-bottom:4px;">Cash</div>
+            <div class="tag tag-amber" style="display:flex;margin-bottom:4px;">MF</div>
+            <div class="tag tag-red" style="display:flex;">Commodity</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:6px">Creatives</div>
+            <div class="tag tag-teal" style="display:flex;margin-bottom:4px;">Offer</div>
+            <div class="tag tag-teal" style="display:flex;margin-bottom:4px;">Awareness</div>
+            <div class="tag tag-teal" style="display:flex;">Education</div>
+          </div>
+        </div>
+        <div class="info-pill">
+          <i class="ti ti-info-circle" style="font-size:16px"></i>
+          <span>Model scores all 36 combos per user per segment. The best combo maximises <strong style="color:var(--text)">Incremental Business Value = (P_with_campaign − P_without) × Segment Value</strong></span>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:700;margin-bottom:0.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">Segment Business Values</div>
+        <table class="seg-table">
+          <thead><tr><th>Segment</th><th>Business Value (₹)</th><th>Priority</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag tag-purple">FNO</span></td><td style="font-size:16px;font-weight:700;color:var(--accent)">₹7,000</td><td>⭐⭐⭐⭐⭐ Highest</td></tr>
+            <tr><td><span class="tag tag-red">Commodity</span></td><td style="font-size:16px;font-weight:700;color:var(--amber)">₹2,500</td><td>⭐⭐⭐⭐ High</td></tr>
+            <tr><td><span class="tag tag-green">Cash</span></td><td style="font-size:16px;font-weight:700;color:var(--teal)">₹2,000</td><td>⭐⭐⭐ Medium</td></tr>
+            <tr><td><span class="tag tag-amber">MF</span></td><td style="font-size:16px;font-weight:700;color:var(--text2)">₹1,500</td><td>⭐⭐ Base</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- SECTION 5: Feature Importance -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <div>
+        <div class="section-title">Feature Importance (XGBoost)</div>
+        <div class="section-desc">SHAP values showing which features drive prediction</div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div id="fi-chart-wrap"><canvas id="fi-chart" role="img" aria-label="Feature importance chart showing XGBoost SHAP values for each input signal"></canvas></div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1rem">Model Performance Metrics</div>
+        <div class="metrics-row" style="grid-template-columns:1fr 1fr;">
+          <div class="metric-card"><div class="metric-val">0.84</div><div class="metric-label">AUC-ROC Score</div><div class="metric-delta">+0.06 vs baseline</div></div>
+          <div class="metric-card"><div class="metric-val">79%</div><div class="metric-label">Precision</div><div class="metric-delta">On holdout set</div></div>
+          <div class="metric-card"><div class="metric-val">76%</div><div class="metric-label">Recall</div><div class="metric-delta">Activation model</div></div>
+          <div class="metric-card"><div class="metric-val">12%</div><div class="metric-label">Lift vs Control</div><div class="metric-delta">Campaign uplift</div></div>
+        </div>
+        <div style="margin-top:1rem" class="info-pill">
+          <i class="ti ti-bulb" style="font-size:16px"></i>
+          <span><strong style="color:var(--text)">Uplift model approach:</strong> Model is trained on past campaign results to learn the <em>incremental</em> probability — not just probability of conversion, but <em>additional</em> probability attributable to the campaign.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Live Predictor -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <div>
+        <div class="section-title">Live Prediction Simulator</div>
+        <div class="section-desc">Adjust user signals to see model output probabilities and best campaign combo</div>
+      </div>
+    </div>
+    <div class="sim-container">
+      <div class="card sim-inputs">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1rem">User Profile Signals</div>
+        
+        <div class="sim-input-group">
+          <div class="sim-label">Login frequency (days/month) <span id="v-login">14</span></div>
+          <input type="range" min="0" max="30" value="14" id="s-login" oninput="updatePred()">
+        </div>
+        <div class="sim-input-group">
+          <div class="sim-label">Days since last trade <span id="v-last">45</span></div>
+          <input type="range" min="0" max="180" value="45" id="s-last" oninput="updatePred()">
+        </div>
+        <div class="sim-input-group">
+          <div class="sim-label">Session duration avg (mins) <span id="v-sess">8</span></div>
+          <input type="range" min="0" max="30" value="8" id="s-sess" oninput="updatePred()">
+        </div>
+        <div class="sim-input-group">
+          <div class="sim-label">Funds added this month (₹000s) <span id="v-funds">5</span></div>
+          <input type="range" min="0" max="100" value="5" id="s-funds" oninput="updatePred()">
+        </div>
+        <div class="sim-input-group">
+          <div class="sim-label">Notification open rate (%) <span id="v-notif">32</span></div>
+          <input type="range" min="0" max="100" value="32" id="s-notif" oninput="updatePred()">
+        </div>
+        <div class="sim-input-group">
+          <div class="sim-label">Past campaign response score <span id="v-camp">0.6</span></div>
+          <input type="range" min="0" max="10" value="6" id="s-camp" oninput="updatePred()">
+        </div>
+        <div style="margin-top:0.5rem">
+          <div class="sim-label" style="margin-bottom:6px">KYC Status</div>
+          <select class="sim-select" id="s-kyc" onchange="updatePred()">
+            <option value="1">Fully Verified</option>
+            <option value="0.6">Partial</option>
+            <option value="0">Pending</option>
+          </select>
+        </div>
+        <div style="margin-top:0.5rem">
+          <div class="sim-label" style="margin-bottom:6px">User Type</div>
+          <select class="sim-select" id="s-type" onchange="updatePred()">
+            <option value="activation">New (Never Traded)</option>
+            <option value="reactivation">Dormant (Was Active)</option>
+            <option value="retention">Active (Retention Risk)</option>
+          </select>
+        </div>
+        <button class="run-btn" onclick="updatePred()" style="margin-top:0.75rem;width:100%;justify-content:center">
+          <i class="ti ti-brain" style="font-size:16px"></i> Recalculate Predictions
+        </button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <!-- User ID + Model Type -->
+        <div class="card">
+          <div class="pred-user-id">USER_ID: <span id="uid" style="color:var(--teal)">USR_8472916</span> &nbsp;|&nbsp; Model: <span id="model-type" style="color:var(--accent)">ACTIVATION</span> &nbsp;|&nbsp; <span class="pulse" style="color:var(--green);font-size:11px">● LIVE</span></div>
+          
+          <!-- Probabilities -->
+          <div style="margin-bottom:1rem">
+            <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Probability Outputs</div>
+            
+            <div class="prob-row">
+              <div class="prob-label" style="font-size:11px;color:var(--text2)">P(activation without campaign)</div>
+              <div class="prob-bar-wrap"><div class="prob-bar" id="bar-nocamp" style="background:var(--text3);width:18%"></div></div>
+              <div class="prob-val" id="val-nocamp" style="color:var(--text2)">18%</div>
+            </div>
+            <div class="prob-row">
+              <div class="prob-label" style="font-size:11px;color:var(--text)">P(activation with best campaign)</div>
+              <div class="prob-bar-wrap"><div class="prob-bar" id="bar-camp" style="background:var(--accent);width:34%"></div></div>
+              <div class="prob-val" id="val-camp" style="color:var(--accent)">34%</div>
+            </div>
+            <div class="prob-row">
+              <div class="prob-label" style="font-size:11px;color:var(--green);font-weight:600">↑ Uplift (Incremental)</div>
+              <div class="prob-bar-wrap"><div class="prob-bar" id="bar-uplift" style="background:var(--green);width:16%"></div></div>
+              <div class="prob-val" id="val-uplift" style="color:var(--green)">+16%</div>
+            </div>
+          </div>
+
+          <!-- Incremental Value -->
+          <div class="uplift-box">
+            <div class="uplift-row">
+              <div class="uplift-label">Best Segment</div>
+              <div class="uplift-value"><span id="best-seg" class="tag tag-purple">FNO</span></div>
+            </div>
+            <div class="uplift-row">
+              <div class="uplift-label">Segment Business Value</div>
+              <div class="uplift-value" id="seg-bv" style="color:var(--amber)">₹7,000</div>
+            </div>
+            <div class="uplift-row">
+              <div class="uplift-label">Uplift Probability</div>
+              <div class="uplift-value" id="uplift-p" style="color:var(--green)">16%</div>
+            </div>
+            <div class="uplift-row uplift-total">
+              <div class="uplift-label">Incremental Business Value</div>
+              <div class="uplift-value" id="ibv">₹1,120</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 36 Combinations Heatmap -->
+        <div class="card">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem">All 36 Combination Scores (IBV ₹)</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:0.75rem">Each column = 1 segment. Each row group = channel. Color = <span style="color:var(--accent)">■ Best</span> <span style="color:var(--green)">■ Top 10</span> <span style="color:var(--amber)">■ Mid</span></div>
+          <div id="combo-grid" class="combo-36"></div>
+          <div style="margin-top:0.875rem">
+            <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">Best Combo Selected →</div>
+            <div class="combo-list" id="best-combo-tags"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// --- Feature importance chart ---
+const fiCtx = document.getElementById('fi-chart').getContext('2d');
+const fiLabels = [
+  'Last Trade Date','Login Frequency','Funds Added',
+  'Past Campaign Resp.','Product Views','Notification Open %',
+  'KYC Status','Session Duration','Account Age',
+  'Watchlist Activity','Net Worth','City/Region'
+];
+const fiData = [0.19,0.17,0.14,0.13,0.10,0.08,0.07,0.05,0.04,0.02,0.01,0.01];
+new Chart(fiCtx, {
+  type: 'bar',
+  data: {
+    labels: fiLabels,
+    datasets: [{
+      label: 'Feature Importance (SHAP)',
+      data: fiData,
+      backgroundColor: fiData.map((v,i) => i < 3 ? '#4e7cff' : i < 6 ? '#00d4aa' : '#8a9bbf'),
+      borderRadius: 4,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { 
+        grid: { color: 'rgba(100,140,255,0.08)' },
+        ticks: { color: '#8a9bbf', font: { size: 10 }, callback: v => (v*100).toFixed(0)+'%' }
+      },
+      y: { 
+        grid: { display: false },
+        ticks: { color: '#8a9bbf', font: { size: 10 } }
+      }
+    }
+  }
+});
+
+// --- Combo grid & predictor ---
+const channels = ['WA', 'PN', 'IA'];
+const segments = ['FNO', 'Cash', 'MF', 'Comm'];
+const creatives = ['Off', 'Awr', 'Edu'];
+const segVals = { FNO: 7000, Cash: 2000, MF: 1500, Comm: 2500 };
+const segColors = { FNO: 'tag-purple', Cash: 'tag-green', MF: 'tag-amber', Comm: 'tag-red' };
+const channelColors = { WA: 'tag-green', PN: 'tag-blue', IA: 'tag-teal' };
+const creativeColors = { Off: 'tag-amber', Awr: 'tag-teal', Edu: 'tag-blue' };
+
+function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+function computePred() {
+  const login = +document.getElementById('s-login').value / 30;
+  const last = 1 - (+document.getElementById('s-last').value / 180);
+  const sess = +document.getElementById('s-sess').value / 30;
+  const funds = +document.getElementById('s-funds').value / 100;
+  const notif = +document.getElementById('s-notif').value / 100;
+  const camp = +document.getElementById('s-camp').value / 10;
+  const kyc = +document.getElementById('s-kyc').value;
+  const type = document.getElementById('s-type').value;
+
+  // Base probability (no campaign)
+  const baseScore = 0.8 * login + 0.9 * last + 0.5 * sess + 0.7 * funds + 0.4 * notif + 0.6 * camp + 0.8 * kyc;
+  const pBase = sigmoid(baseScore - 2.5) * 0.6;
+
+  // Channel uplift factors
+  const chUplift = { WA: 0.12 + notif * 0.08, PN: 0.09 + notif * 0.12, IA: 0.07 + login * 0.05 };
+  // Segment propensity
+  const segProp = { FNO: 0.3 + funds * 0.5, Cash: 0.4 + funds * 0.3, MF: 0.35, Comm: 0.25 + funds * 0.2 };
+  // Creative uplift
+  const crUplift = { Off: 0.08 + funds * 0.04, Awr: 0.05, Edu: 0.04 + sess * 0.03 };
+
+  // Generate all 36
+  let combos = [];
+  channels.forEach(ch => {
+    segments.forEach(sg => {
+      creatives.forEach(cr => {
+        const pWith = Math.min(0.92, pBase + chUplift[ch] + crUplift[cr]);
+        const uplift = Math.max(0.01, pWith - pBase);
+        const sp = segProp[sg];
+        const ibv = uplift * sp * segVals[sg];
+        combos.push({ ch, sg, cr, pBase, pWith, uplift, ibv: Math.round(ibv) });
+      });
+    });
+  });
+
+  combos.sort((a,b) => b.ibv - a.ibv);
+  return combos;
+}
+
+function updatePred() {
+  // Update slider labels
+  ['login','last','sess','funds','notif'].forEach(k => {
+    document.getElementById('v-'+k).textContent = document.getElementById('s-'+k).value;
+  });
+  document.getElementById('v-camp').textContent = (document.getElementById('s-camp').value / 10).toFixed(1);
+
+  const type = document.getElementById('s-type').value;
+  const typeLabels = { activation: 'ACTIVATION', reactivation: 'REACTIVATION', retention: 'RETENTION' };
+  document.getElementById('model-type').textContent = typeLabels[type];
+
+  const combos = computePred();
+  const best = combos[0];
+  const top10 = combos.slice(0, 10);
+
+  // Update prob bars
+  const pct = v => Math.round(v * 100);
+  document.getElementById('bar-nocamp').style.width = pct(best.pBase) + '%';
+  document.getElementById('val-nocamp').textContent = pct(best.pBase) + '%';
+  document.getElementById('bar-camp').style.width = pct(best.pWith) + '%';
+  document.getElementById('val-camp').textContent = pct(best.pWith) + '%';
+  document.getElementById('bar-uplift').style.width = pct(best.uplift) + '%';
+  document.getElementById('val-uplift').textContent = '+' + pct(best.uplift) + '%';
+
+  // Uplift box
+  const segLabel = { FNO: 'FNO', Cash: 'Cash', MF: 'MF', Comm: 'Commodity' };
+  document.getElementById('best-seg').className = 'tag ' + segColors[best.sg];
+  document.getElementById('best-seg').textContent = segLabel[best.sg] || best.sg;
+  document.getElementById('seg-bv').textContent = '₹' + segVals[best.sg].toLocaleString();
+  document.getElementById('uplift-p').textContent = pct(best.uplift) + '%';
+  document.getElementById('ibv').textContent = '₹' + best.ibv.toLocaleString();
+
+  // Combo grid
+  const grid = document.getElementById('combo-grid');
+  grid.innerHTML = '';
+  combos.forEach((c, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'combo-cell' + (i === 0 ? ' best' : i < 10 ? ' top3' : i < 20 ? ' mid' : '');
+    cell.title = `${c.ch}+${c.sg}+${c.cr}\nIBV: ₹${c.ibv}\nUplift: ${pct(c.uplift)}%`;
+    cell.textContent = '₹' + (c.ibv >= 1000 ? (c.ibv/1000).toFixed(1)+'k' : c.ibv);
+    grid.appendChild(cell);
+  });
+
+  // Best combo tags
+  const tagsEl = document.getElementById('best-combo-tags');
+  tagsEl.innerHTML = [
+    `<span class="tag ${channelColors[best.ch]}"><i class="ti ti-${best.ch==='WA'?'brand-whatsapp':best.ch==='PN'?'bell':'message'}"></i> ${best.ch==='WA'?'WhatsApp':best.ch==='PN'?'Push Notif.':'In-App'}</span>`,
+    `<span class="tag ${segColors[best.sg]}">${segLabel[best.sg]}</span>`,
+    `<span class="tag ${creativeColors[best.cr]}">${best.cr==='Off'?'Offer':best.cr==='Awr'?'Awareness':'Education'}</span>`,
+    `<span style="font-size:12px;color:var(--text2);margin-left:4px;align-self:center">→ IBV: <strong style="color:var(--green)">₹${best.ibv.toLocaleString()}</strong></span>`
+  ].join('');
+}
+
+updatePred();
+</script>
+</body>
+</html>

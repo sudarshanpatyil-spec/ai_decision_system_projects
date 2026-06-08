@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Angel One — F&O NBA Decision Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --red:#C9170A;--red-d:#a01208;--red-l:#fff1f0;
+  --purple:#6d28d9;--purple-l:#ede9fe;--purple-t:#4c1d95;
+  --blue:#1d4ed8;--blue-l:#dbeafe;--blue-t:#1e3a8a;
+  --amber:#b45309;--amber-l:#fef3c7;--amber-t:#78350f;
+  --green:#166534;--green-l:#dcfce7;--green-t:#14532d;
+  --rose:#be123c;--rose-l:#fff1f2;--rose-t:#9f1239;
+  --slate:#475569;--slate-l:#f8fafc;
+  --g50:#f9fafb;--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;
+  --g400:#9ca3af;--g500:#6b7280;--g600:#4b5563;
+  --g700:#374151;--g800:#1f2937;--g900:#111827;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --r4:4px;--r6:6px;--r8:8px;--r10:10px;--r12:12px;--r16:16px;
+}
+html,body{font-family:var(--font);background:var(--g100);color:var(--g900);font-size:14px;line-height:1.5;min-height:100vh;}
+
+/* TOPBAR */
+.topbar{background:#fff;border-bottom:1px solid var(--g200);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.tb-left{display:flex;align-items:center;gap:14px;}
+.logo{background:var(--red);color:#fff;font-size:13px;font-weight:600;padding:5px 14px;border-radius:30px;}
+.tb-title{font-size:15px;font-weight:600;color:var(--g800);}
+.tb-sub{font-size:11px;color:var(--g400);margin-top:1px;}
+.tb-right{display:flex;align-items:center;gap:10px;}
+.status-pill{font-size:12px;font-weight:500;padding:5px 14px;border-radius:30px;border:1px solid;display:flex;align-items:center;gap:6px;transition:all 0.3s;}
+.dot{width:7px;height:7px;border-radius:50%;}
+.s-idle{background:var(--g100);color:var(--g500);border-color:var(--g200);}
+.s-idle .dot{background:var(--g400);}
+.s-scoring{background:var(--amber-l);color:var(--amber);border-color:#fcd34d;animation:blink 1.4s infinite;}
+.s-scoring .dot{background:var(--amber);}
+.s-ready{background:var(--green-l);color:var(--green);border-color:#86efac;}
+.s-ready .dot{background:#22c55e;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.55}}
+
+/* NAV TABS */
+.nav-tabs{background:#fff;border-bottom:1px solid var(--g200);padding:0 28px;display:flex;gap:4px;}
+.nav-tab{padding:10px 18px;font-size:13px;font-weight:500;color:var(--g500);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;}
+.nav-tab:hover{color:var(--g700);}
+.nav-tab.active{color:var(--red);border-bottom-color:var(--red);}
+
+/* PAGE BODY */
+.page{padding:22px 28px;max-width:1600px;margin:0 auto;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.stat{background:#fff;border:1px solid var(--g200);border-radius:var(--r12);padding:16px 18px;}
+.stat-label{font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--g400);margin-bottom:4px;}
+.stat-val{font-size:26px;font-weight:600;color:var(--g900);line-height:1.1;}
+.stat-sub{font-size:11px;color:var(--g400);margin-top:3px;}
+
+/* 3-COL GRID */
+.main-grid{display:grid;grid-template-columns:320px 1fr 300px;gap:18px;align-items:start;}
+.col-label{font-size:11px;font-weight:600;letter-spacing:0.7px;text-transform:uppercase;color:var(--g400);margin-bottom:10px;}
+
+/* PHONE */
+.phone-wrap{background:var(--g800);border-radius:32px;padding:10px;margin-bottom:14px;}
+.phone-inner{background:#fff;border-radius:24px;overflow:hidden;}
+.p-topbar{background:var(--red);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.p-brand{color:#fff;font-size:15px;font-weight:700;}
+.p-icons{display:flex;gap:6px;}
+.p-icon{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;}
+.p-tabs{display:flex;background:#fff;border-bottom:1px solid var(--g200);}
+.p-tab{flex:1;padding:9px 4px;text-align:center;font-size:11px;color:var(--g400);}
+.p-tab.active{color:var(--red);border-bottom:2px solid var(--red);font-weight:600;margin-bottom:-1px;}
+.p-body{background:var(--g50);padding:12px;min-height:480px;}
+.pf-card{background:var(--g900);border-radius:var(--r8);padding:14px;margin-bottom:10px;color:#fff;}
+.pf-label{font-size:10px;color:rgba(255,255,255,.5);margin-bottom:3px;}
+.pf-val{font-size:20px;font-weight:700;}
+.pf-chg{font-size:11px;margin-top:3px;}
+.up{color:#4ade80;}.dn{color:#f87171;}
+.banner-zone{min-height:92px;margin-bottom:10px;}
+.b-loading{border:1.5px dashed var(--g200);border-radius:var(--r8);padding:16px;text-align:center;font-size:11px;color:var(--g400);background:#fff;}
+.app-banner{border-radius:var(--r8);padding:13px 14px;}
+.b-fno{background:var(--purple);color:#fff;}
+.b-edu{background:var(--blue);color:#fff;}
+.b-aware{background:var(--amber);color:#fff;}
+.b-badge{font-size:9px;font-weight:700;letter-spacing:.8px;background:rgba(255,255,255,.2);display:inline-block;padding:2px 9px;border-radius:20px;margin-bottom:5px;}
+.b-title{font-size:13px;font-weight:700;margin-bottom:3px;}
+.b-body{font-size:11px;opacity:.85;line-height:1.4;margin-bottom:9px;}
+.b-cta{background:rgba(255,255,255,.25);border:none;color:#fff;padding:5px 13px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);}
+.b-cta:hover{background:rgba(255,255,255,.38);}
+.no-banner{border:1.5px dashed var(--g200);border-radius:var(--r8);padding:14px;text-align:center;font-size:11px;color:var(--g400);background:#fff;}
+.ql-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px;}
+.ql{background:#fff;border:1px solid var(--g200);border-radius:var(--r6);padding:7px 4px;text-align:center;font-size:9px;color:var(--g500);}
+.ql-i{font-size:16px;display:block;margin-bottom:2px;}
+.wl-box{background:#fff;border:1px solid var(--g200);border-radius:var(--r8);padding:10px;}
+.wl-h{font-size:12px;font-weight:600;color:var(--g700);margin-bottom:7px;}
+.s-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--g100);font-size:11px;}
+.s-row:last-child{border-bottom:none;}
+.sn{font-weight:600;color:var(--g800);}
+.sp{color:var(--g400);}
+
+/* USER SELECTOR */
+.user-selector{background:#fff;border:1px solid var(--g200);border-radius:var(--r12);overflow:hidden;}
+.us-head{padding:12px 14px;border-bottom:1px solid var(--g100);font-size:12px;font-weight:600;color:var(--g700);display:flex;justify-content:space-between;align-items:center;}
+.us-list{padding:6px;}
+.us-item{display:flex;align-items:center;gap:9px;padding:9px 9px;border-radius:var(--r6);cursor:pointer;transition:background .1s;border:1px solid transparent;margin-bottom:2px;}
+.us-item:hover{background:var(--g50);border-color:var(--g200);}
+.us-item.active{background:var(--red-l);border-color:#fca5a5;}
+.us-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.us-name{font-size:12px;font-weight:500;color:var(--g800);}
+.us-sc{font-size:10px;color:var(--g400);margin-top:1px;}
+.us-badge{margin-left:auto;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;flex-shrink:0;white-space:nowrap;}
+
+/* DECISION PANEL */
+.dp{background:#fff;border:1px solid var(--g200);border-radius:var(--r12);overflow:hidden;}
+.dp-header{padding:14px 18px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between;}
+.dp-title{font-size:14px;font-weight:700;color:var(--g800);}
+.dp-sub{font-size:11px;color:var(--g400);}
+.dp-body{padding:18px;}
+.dp-empty{padding:60px 20px;text-align:center;color:var(--g400);font-size:13px;}
+
+.user-row{display:flex;align-items:center;gap:12px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--g100);}
+.avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;}
+.u-name{font-size:15px;font-weight:700;color:var(--g900);}
+.u-id{font-size:11px;color:var(--g400);font-family:var(--mono);}
+.u-seg{font-size:11px;color:var(--g500);margin-top:2px;}
+
+.sec-title{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--g400);margin-bottom:9px;}
+
+/* SCORE */
+.score-row{display:flex;align-items:baseline;gap:5px;margin-bottom:7px;}
+.score-big{font-size:38px;font-weight:700;line-height:1;}
+.score-pct{font-size:15px;color:var(--g400);}
+.score-ctx{font-size:12px;color:var(--g500);margin-left:8px;}
+.score-track{height:8px;background:var(--g100);border-radius:4px;overflow:hidden;margin-bottom:7px;}
+.score-fill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.bands{display:flex;gap:3px;margin-bottom:16px;}
+.band{flex:1;text-align:center;padding:3px 2px;border-radius:4px;font-size:10px;font-weight:500;color:var(--g300);}
+.band.on{font-weight:700;}
+
+/* FEATURES 2-SECTION GRID */
+.feat-wrap{margin-bottom:16px;}
+.feat-group-title{font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--g500);text-transform:uppercase;margin-bottom:6px;padding-left:2px;}
+.feat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;}
+.feat-chip{background:var(--g50);border:1px solid var(--g100);border-radius:var(--r6);padding:8px 10px;}
+.fc-k{font-size:9px;color:var(--g400);margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px;}
+.fc-v{font-size:12px;color:var(--g800);font-weight:600;line-height:1.3;}
+.fc-v.num{font-family:var(--mono);color:var(--purple-t);}
+
+/* POLICIES */
+.policy-list{margin-bottom:16px;}
+.p-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--g100);font-size:12px;color:var(--g600);}
+.p-row:last-child{border-bottom:none;}
+.p-ico{width:19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.ppass{background:var(--green-l);color:var(--green);}
+.pfail{background:var(--rose-l);color:var(--rose);}
+
+/* DECISION BOX */
+.d-box{border-radius:var(--r8);padding:14px;margin-bottom:14px;border:1px solid;}
+.d-eyebrow{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-bottom:5px;}
+.d-action{font-size:17px;font-weight:700;margin-bottom:5px;}
+.d-tier{font-size:12px;line-height:1.5;opacity:.8;}
+
+.reasoning{background:var(--g50);border:1px solid var(--g100);border-radius:var(--r6);padding:12px;margin-bottom:16px;font-size:12px;color:var(--g600);line-height:1.7;}
+
+/* FEEDBACK */
+.fb-section{margin-bottom:14px;}
+.fb-row{display:flex;gap:7px;}
+.fb-btn{flex:1;padding:10px 6px;border-radius:var(--r6);border:1px solid var(--g200);background:var(--g50);font-size:12px;font-weight:500;cursor:pointer;color:var(--g600);font-family:var(--font);text-align:center;transition:all .15s;}
+.fb-btn:hover{background:#fff;border-color:var(--g300);}
+.fb-active-clicked{background:var(--green-l)!important;color:var(--green-t)!important;border-color:#86efac!important;}
+.fb-active-ignored{background:var(--amber-l)!important;color:var(--amber-t)!important;border-color:#fcd34d!important;}
+
+.next-btn{width:100%;padding:13px;background:var(--red);color:#fff;border:none;border-radius:var(--r8);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;}
+.next-btn:hover{background:var(--red-d);}
+
+/* LOG PANEL */
+.log-panel{background:#fff;border:1px solid var(--g200);border-radius:var(--r12);overflow:hidden;max-height:780px;overflow-y:auto;}
+.log-head{padding:12px 16px;border-bottom:1px solid var(--g100);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:10;}
+.log-h-t{font-size:13px;font-weight:700;color:var(--g800);}
+.log-h-s{font-size:11px;color:var(--g400);}
+.log-empty{padding:28px;text-align:center;font-size:12px;color:var(--g400);}
+.log-entry{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid var(--g100);transition:background .1s;}
+.log-entry:last-child{border-bottom:none;}
+.log-entry:hover{background:var(--g50);}
+.log-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.log-content{flex:1;min-width:0;}
+.log-user{font-size:12px;font-weight:600;color:var(--g800);}
+.log-action{font-size:11px;color:var(--g500);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.log-fb{display:inline-block;margin-top:3px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;}
+.fb-t-clicked{background:var(--green-l);color:var(--green-t);}
+.fb-t-ignored{background:var(--amber-l);color:var(--amber-t);}
+.log-score-badge{font-size:11px;font-weight:700;font-family:var(--mono);padding:2px 7px;border-radius:5px;flex-shrink:0;}
+.log-time{font-size:10px;color:var(--g300);font-family:var(--mono);flex-shrink:0;}
+
+/* === DATA TABLE TAB === */
+.table-controls{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;}
+.table-controls-left{display:flex;gap:8px;align-items:center;}
+.search-box{padding:8px 12px;border:1px solid var(--g200);border-radius:var(--r6);font-size:13px;font-family:var(--font);color:var(--g800);background:#fff;width:240px;outline:none;}
+.search-box:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(201,23,10,.08);}
+.filter-select{padding:8px 12px;border:1px solid var(--g200);border-radius:var(--r6);font-size:12px;font-family:var(--font);color:var(--g600);background:#fff;outline:none;cursor:pointer;}
+.dl-btn{padding:9px 18px;background:var(--red);color:#fff;border:none;border-radius:var(--r6);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:7px;transition:background .15s;}
+.dl-btn:hover{background:var(--red-d);}
+.dl-btn svg{width:15px;height:15px;}
+.table-wrap{background:#fff;border:1px solid var(--g200);border-radius:var(--r12);overflow:hidden;}
+.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+.data-table thead tr{background:var(--g50);}
+.data-table th{padding:11px 14px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--g500);border-bottom:1px solid var(--g200);white-space:nowrap;cursor:pointer;user-select:none;}
+.data-table th:hover{color:var(--g700);}
+.data-table th .sort-arrow{margin-left:4px;opacity:.4;}
+.data-table th.sorted .sort-arrow{opacity:1;color:var(--red);}
+.data-table td{padding:10px 14px;border-bottom:1px solid var(--g100);color:var(--g700);vertical-align:middle;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:var(--g50);}
+.data-table td.mono{font-family:var(--mono);font-size:11px;}
+.badge-pill{font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap;display:inline-block;}
+.table-empty{padding:40px;text-align:center;font-size:13px;color:var(--g400);}
+
+/* PAGINATION */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--g100);background:var(--g50);}
+.pg-info{font-size:12px;color:var(--g500);}
+.pg-btns{display:flex;gap:6px;}
+.pg-btn{padding:6px 12px;border:1px solid var(--g200);border-radius:var(--r6);background:#fff;font-size:12px;cursor:pointer;font-family:var(--font);color:var(--g600);transition:all .1s;}
+.pg-btn:hover:not(:disabled){background:var(--g100);}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed;}
+.pg-btn.active{background:var(--red);color:#fff;border-color:var(--red);}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--g200);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-left">
+    <div class="logo">Angel One</div>
+    <div>
+      <div class="tb-title">F&amp;O Next Best Action — Decision Engine</div>
+      <div class="tb-sub">ML-driven orchestration prototype &nbsp;·&nbsp; Real-time readiness scoring &nbsp;·&nbsp; Feedback capture</div>
+    </div>
+  </div>
+  <div class="tb-right">
+    <div class="status-pill s-idle" id="global-status"><div class="dot"></div><span id="status-text">Idle</span></div>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="switchTab('simulation',this)">Live Simulation</div>
+  <div class="nav-tab" onclick="switchTab('data',this)">Feedback Data <span id="data-count-badge" style="background:var(--g100);color:var(--g500);font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;margin-left:5px;">0</span></div>
+</div>
+
+<div class="page">
+
+  <!-- TAB: SIMULATION -->
+  <div class="tab-content active" id="tab-simulation">
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-label">Users Processed</div><div class="stat-val" id="s-processed">0</div><div class="stat-sub">this session</div></div>
+      <div class="stat"><div class="stat-label">Banners Shown</div><div class="stat-val" id="s-banners">0</div><div class="stat-sub">F&amp;O · edu · aware</div></div>
+      <div class="stat"><div class="stat-label">Guardrails Fired</div><div class="stat-val" id="s-blocked">0</div><div class="stat-sub">compliance + VHP</div></div>
+      <div class="stat"><div class="stat-label">CTA Clicks</div><div class="stat-val" id="s-clicks">0</div><div class="stat-sub">feedback captured</div></div>
+      <div class="stat"><div class="stat-label">Ignore Rate</div><div class="stat-val" id="s-ignrate">—</div><div class="stat-sub">banners ignored</div></div>
+    </div>
+
+    <!-- 3-COL -->
+    <div class="main-grid">
+
+      <!-- COL 1 -->
+      <div>
+        <div class="col-label">App simulation</div>
+        <div class="phone-wrap" style="margin-bottom:14px;">
+          <div class="phone-inner">
+            <div class="p-topbar">
+              <span class="p-brand">Angel One</span>
+              <div class="p-icons">
+                <div class="p-icon">🔔</div>
+                <div class="p-icon">👤</div>
+              </div>
+            </div>
+            <div class="p-tabs">
+              <div class="p-tab">Home</div>
+              <div class="p-tab active">F&amp;O</div>
+              <div class="p-tab">Funds</div>
+              <div class="p-tab">IPO</div>
+            </div>
+            <div class="p-body">
+              <div class="pf-card">
+                <div class="pf-label">Portfolio value</div>
+                <div class="pf-val" id="pf-val">₹—</div>
+                <div class="pf-chg up" id="pf-chg">—</div>
+              </div>
+              <div class="banner-zone" id="banner-zone">
+                <div class="b-loading">Select a user to trigger the orchestrator</div>
+              </div>
+              <div class="ql-grid">
+                <div class="ql"><span class="ql-i">📈</span>Nifty 50</div>
+                <div class="ql"><span class="ql-i">💹</span>Options</div>
+                <div class="ql"><span class="ql-i">🔮</span>Futures</div>
+                <div class="ql"><span class="ql-i">📊</span>Charts</div>
+              </div>
+              <div class="wl-box">
+                <div class="wl-h">Watchlist</div>
+                <div class="s-row"><span class="sn">RELIANCE</span><span class="sp">₹2,941</span><span class="up" style="font-size:11px;font-weight:600;">+1.2%</span></div>
+                <div class="s-row"><span class="sn">TCS</span><span class="sp">₹3,782</span><span class="dn" style="font-size:11px;font-weight:600;">−0.8%</span></div>
+                <div class="s-row"><span class="sn">HDFC BANK</span><span class="sp">₹1,624</span><span class="up" style="font-size:11px;font-weight:600;">+0.4%</span></div>
+                <div class="s-row"><span class="sn">NIFTY 50</span><span class="sp">₹23,244</span><span class="up" style="font-size:11px;font-weight:600;">+0.6%</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-label">Sample profiles + random</div>
+        <div class="user-selector">
+          <div class="us-head">
+            <span>Click any user or load next random</span>
+          </div>
+          <div class="us-list" id="user-list"></div>
+        </div>
+      </div>
+
+      <!-- COL 2: DECISION -->
+      <div>
+        <div class="col-label">NBA decision trace — live orchestration</div>
+        <div class="dp">
+          <div class="dp-header">
+            <div>
+              <div class="dp-title">Orchestration engine</div>
+              <div class="dp-sub">Redis score fetch → Policy check → Guardrail eval → Action trigger</div>
+            </div>
+            <div style="font-size:11px;color:var(--g400);font-family:var(--mono);" id="dp-uid">—</div>
+          </div>
+          <div class="dp-body" id="dp-body">
+            <div class="dp-empty">← Select a user or click "Next user session" to begin</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COL 3: LOG -->
+      <div>
+        <div class="col-label">Event log</div>
+        <div class="log-panel">
+          <div class="log-head">
+            <div class="log-h-t">Session events</div>
+            <div class="log-h-s" id="log-count">0 events</div>
+          </div>
+          <div id="log-body"><div class="log-empty">No events yet</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB: DATA TABLE -->
+  <div class="tab-content" id="tab-data">
+    <div class="table-controls">
+      <div class="table-controls-left">
+        <input class="search-box" id="tbl-search" type="text" placeholder="Search by name, action, feedback..." oninput="renderTable()">
+        <select class="filter-select" id="tbl-action-filter" onchange="renderTable()">
+          <option value="">All actions</option>
+          <option value="SHOW_FNO_BANNER">F&amp;O Banner</option>
+          <option value="SHOW_EDU_BANNER">Edu Banner</option>
+          <option value="SHOW_AWARE_BANNER">Awareness Banner</option>
+          <option value="NO_ACTION">No Action</option>
+          <option value="BLOCK">Compliance Block</option>
+          <option value="RM_OUTREACH">RM Outreach</option>
+        </select>
+        <select class="filter-select" id="tbl-fb-filter" onchange="renderTable()">
+          <option value="">All feedback</option>
+          <option value="clicked">Clicked</option>
+          <option value="ignored">Ignored</option>
+          <option value="pending">Pending</option>
+        </select>
+      </div>
+      <button class="dl-btn" onclick="downloadExcel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Excel
+      </button>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th onclick="sortTable('seq')">Event # <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('name')">User <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('userId')">User ID <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('segment')">Segment <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('score')">Score <span class="sort-arrow">↕</span></th>
+            <th>Login Freq 15d</th>
+            <th>FNO Page Visits 7d</th>
+            <th>Equity Trades 30d</th>
+            <th>Options Chain Views</th>
+            <th>Portfolio Value</th>
+            <th>Account Age (yrs)</th>
+            <th>Risk Profile</th>
+            <th>Compliance</th>
+            <th>VHP Flag</th>
+            <th onclick="sortTable('action')">Action <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('feedback')">Feedback <span class="sort-arrow">↕</span></th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body">
+          <tr><td colspan="17" class="table-empty">No data yet — run some sessions first</td></tr>
+        </tbody>
+      </table>
+      <div class="pagination" id="pagination" style="display:none;">
+        <div class="pg-info" id="pg-info"></div>
+        <div class="pg-btns" id="pg-btns"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ═══════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════
+const SAMPLE_USERS = [
+  {id:"U001",name:"Priya Sharma",initials:"PS",ab:"#ede9fe",ac:"#4c1d95",seg:"Active equity trader",tenure:3.2,pv:240000,blocked:false,vhp:false,score:72,
+   features:{login_freq_15d:14,fno_page_visits_7d:12,equity_trades_30d:8,options_chain_views:9,watchlist_adds_7d:5,search_fno_terms:7,app_sessions_7d:18,avg_session_min:12,portfolio_value:240000,account_age_yrs:3.2,risk_profile:"Aggressive",kyc_status:"Verified",segment:"Equity power user",is_new_user:false}},
+  {id:"U002",name:"Rahul Mehta",initials:"RM",ab:"#dbeafe",ac:"#1e3a8a",seg:"Moderate investor",tenure:1.1,pv:58000,blocked:false,vhp:false,score:25,
+   features:{login_freq_15d:6,fno_page_visits_7d:3,equity_trades_30d:2,options_chain_views:1,watchlist_adds_7d:2,search_fno_terms:2,app_sessions_7d:7,avg_session_min:6,portfolio_value:58000,account_age_yrs:1.1,risk_profile:"Moderate",kyc_status:"Verified",segment:"New, low activity",is_new_user:true}},
+  {id:"U003",name:"Anita Joshi",initials:"AJ",ab:"#fef9c3",ac:"#78350f",seg:"Passive investor",tenure:0.4,pv:12000,blocked:false,vhp:false,score:10,
+   features:{login_freq_15d:3,fno_page_visits_7d:1,equity_trades_30d:0,options_chain_views:0,watchlist_adds_7d:0,search_fno_terms:0,app_sessions_7d:3,avg_session_min:4,portfolio_value:12000,account_age_yrs:0.4,risk_profile:"Conservative",kyc_status:"Verified",segment:"New, very low activity",is_new_user:true}},
+  {id:"U004",name:"Vikram Nair",initials:"VN",ab:"#fee2e2",ac:"#9f1239",seg:"HNI investor",tenure:7.5,pv:4200000,blocked:false,vhp:true,score:65,
+   features:{login_freq_15d:12,fno_page_visits_7d:9,equity_trades_30d:15,options_chain_views:6,watchlist_adds_7d:4,search_fno_terms:5,app_sessions_7d:14,avg_session_min:18,portfolio_value:4200000,account_age_yrs:7.5,risk_profile:"Aggressive",kyc_status:"Verified",segment:"HNI, power trader",is_new_user:false}},
+  {id:"U005",name:"Deepa Iyer",initials:"DI",ab:"#dcfce7",ac:"#14532d",seg:"Young saver",tenure:0.2,pv:8500,blocked:true,vhp:false,score:42,
+   features:{login_freq_15d:8,fno_page_visits_7d:5,equity_trades_30d:1,options_chain_views:2,watchlist_adds_7d:3,search_fno_terms:3,app_sessions_7d:9,avg_session_min:8,portfolio_value:8500,account_age_yrs:0.2,risk_profile:"Moderate",kyc_status:"KYC Pending",segment:"New, compliance flagged",is_new_user:true}},
+  {id:"U006",name:"Sanjay Gupta",initials:"SG",ab:"#f3e8ff",ac:"#4c1d95",seg:"Day trader",tenure:4.8,pv:3500000,blocked:false,vhp:false,score:88,
+   features:{login_freq_15d:15,fno_page_visits_7d:24,equity_trades_30d:32,options_chain_views:18,watchlist_adds_7d:8,search_fno_terms:14,app_sessions_7d:22,avg_session_min:24,portfolio_value:3500000,account_age_yrs:4.8,risk_profile:"Aggressive",kyc_status:"Verified",segment:"Expert, near-FNO",is_new_user:false}},
+  {id:"U007",name:"Meena Pillai",initials:"MP",ab:"#ffedd5",ac:"#7c2d12",seg:"Occasional investor",tenure:2.1,pv:31000,blocked:false,vhp:false,score:3,
+   features:{login_freq_15d:1,fno_page_visits_7d:0,equity_trades_30d:0,options_chain_views:0,watchlist_adds_7d:0,search_fno_terms:0,app_sessions_7d:1,avg_session_min:2,portfolio_value:31000,account_age_yrs:2.1,risk_profile:"Conservative",kyc_status:"Verified",segment:"Dormant user",is_new_user:false}},
+];
+
+const AVATARS_COLORS=[["#ede9fe","#4c1d95"],["#dbeafe","#1e3a8a"],["#dcfce7","#14532d"],["#fff7ed","#7c2d12"],["#fef9c3","#78350f"],["#f3e8ff","#4c1d95"],["#ffedd5","#7c2d12"],["#fee2e2","#9f1239"]];
+const NAMES_F=["Priya","Anjali","Divya","Sneha","Kavita","Pooja","Riya","Neha","Shalini","Meera","Fatima","Sunita","Geeta","Puja","Rekha"];
+const NAMES_M=["Rahul","Vikram","Sanjay","Amit","Rohit","Arjun","Deepak","Vishal","Kunal","Kiran","Suresh","Ramesh","Arun","Vijay","Manish"];
+const SURNAMES=["Sharma","Mehta","Joshi","Nair","Gupta","Iyer","Pillai","Singh","Kumar","Patel","Shah","Verma","Reddy","Das","Rao"];
+const SEGS=["Active equity trader","Moderate investor","Passive investor","Day trader","HNI investor","Young saver","Occasional investor","First-time investor","Swing trader","SIP investor"];
+const RISKS=["Conservative","Moderate","Aggressive"];
+const KYC=["Verified","KYC Pending","Under Review"];
+
+let randUid=100;
+function randomUser(){
+  randUid++;
+  const male=Math.random()>.5;
+  const fn=(male?NAMES_M:NAMES_F)[Math.floor(Math.random()*15)];
+  const ln=SURNAMES[Math.floor(Math.random()*SURNAMES.length)];
+  const name=fn+" "+ln;
+  const inits=fn[0]+ln[0];
+  const [ab,ac]=AVATARS_COLORS[Math.floor(Math.random()*AVATARS_COLORS.length)];
+  const score=Math.floor(Math.random()*101);
+  const tenure=parseFloat((Math.random()*10+0.1).toFixed(1));
+  const risk=RISKS[Math.floor(Math.random()*3)];
+  const pv=Math.floor(Math.random()*5000000+5000);
+  const blocked=Math.random()<0.08;
+  const vhp=!blocked && pv>4000000 && Math.random()<0.7;
+  const loginFreq=Math.min(15,Math.max(0,Math.round(score/8+Math.random()*4)));
+  const fnoVisits=Math.min(25,Math.max(0,Math.round(score/7+Math.random()*3)));
+  const trades=Math.min(40,Math.max(0,Math.round(score/4+Math.random()*5)));
+  const optViews=Math.min(20,Math.max(0,Math.round(score/6+Math.random()*3)));
+  return{
+    id:"U"+String(randUid).padStart(3,"0"),name,initials:inits,ab,ac,
+    seg:SEGS[Math.floor(Math.random()*SEGS.length)],tenure,pv,blocked,vhp,score,
+    features:{
+      login_freq_15d:loginFreq,
+      fno_page_visits_7d:fnoVisits,
+      equity_trades_30d:trades,
+      options_chain_views:optViews,
+      watchlist_adds_7d:Math.max(0,Math.round(Math.random()*8)),
+      search_fno_terms:Math.max(0,Math.round(score/12+Math.random()*3)),
+      app_sessions_7d:Math.max(1,Math.round(loginFreq*1.2+Math.random()*3)),
+      avg_session_min:Math.max(1,Math.round(score/10+Math.random()*10)),
+      portfolio_value:pv,
+      account_age_yrs:tenure,
+      risk_profile:risk,
+      kyc_status:blocked?KYC[1+(Math.random()>.5?1:0)]:KYC[0],
+      segment:SEGS[Math.floor(Math.random()*SEGS.length)],
+      is_new_user:tenure<1
+    }
+  };
+}
+
+// STATE
+let currentUser=null;
+let sessionFeedback={};
+let stats={processed:0,banners:0,blocked:0,clicks:0,ignored:0};
+let allEvents=[];
+let sortCol="seq";
+let sortDir="desc";
+let currentPage=1;
+const PAGE_SIZE=15;
+
+// ═══════════════════════════════════════
+// DECIDE
+// ═══════════════════════════════════════
+function decide(u){
+  if(u.blocked) return{action:"BLOCK",label:"No banner — compliance hold",tier:"Compliance hard block (KYC issue)",banner:null,dc:{bg:"#fff1f2",text:"#9f1239",border:"#fca5a5"}};
+  if(u.vhp) return{action:"RM_OUTREACH",label:"Route to Relationship Manager",tier:"VHP guardrail — portfolio > ₹40L",banner:null,dc:{bg:"#fff7ed",text:"#9a3412",border:"#fed7aa"}};
+  if(u.score>=30) return{action:"SHOW_FNO_BANNER",label:"Show F&O registration banner",tier:"Score ≥ 30% — high readiness",banner:"fno",dc:{bg:"#ede9fe",text:"#4c1d95",border:"#c4b5fd"}};
+  if(u.score>=20) return{action:"SHOW_EDU_BANNER",label:"Show F&O education banner",tier:"Score 20–30% — nurture with education",banner:"edu",dc:{bg:"#dbeafe",text:"#1e3a8a",border:"#93c5fd"}};
+  if(u.score>=5) return{action:"SHOW_AWARE_BANNER",label:"Show F&O awareness banner",tier:"Score 5–20% — soft awareness nudge",banner:"aware",dc:{bg:"#fef3c7",text:"#78350f",border:"#fde68a"}};
+  return{action:"NO_ACTION",label:"No banner — score below threshold",tier:"Score < 5% — no action",banner:null,dc:{bg:"#f3f4f6",text:"#4b5563",border:"#d1d5db"}};
+}
+
+function scoreColor(s){
+  if(s>=60) return"#16a34a";
+  if(s>=30) return"#7c3aed";
+  if(s>=15) return"#d97706";
+  return"#dc2626";
+}
+
+const actionDot={SHOW_FNO_BANNER:"#7c3aed",SHOW_EDU_BANNER:"#2563eb",SHOW_AWARE_BANNER:"#d97706",NO_ACTION:"#9ca3af",BLOCK:"#dc2626",RM_OUTREACH:"#c2410c"};
+
+// ═══════════════════════════════════════
+// RENDER BANNER
+// ═══════════════════════════════════════
+function renderBanner(banner){
+  const z=document.getElementById("banner-zone");
+  if(banner==="fno") z.innerHTML=`<div class="app-banner b-fno"><div class="b-badge">F&amp;O ACCESS</div><div class="b-title">Start Trading Futures &amp; Options</div><div class="b-body">Your portfolio is ready. Unlock F&amp;O and multiply your strategies.</div><button class="b-cta" onclick="simFeedback('clicked')">Activate F&amp;O Account</button></div>`;
+  else if(banner==="edu") z.innerHTML=`<div class="app-banner b-edu"><div class="b-badge">LEARN F&amp;O</div><div class="b-title">Understand Futures &amp; Options</div><div class="b-body">Free 10-min guide — learn how F&amp;O works before you trade.</div><button class="b-cta" onclick="simFeedback('clicked')">Start Learning</button></div>`;
+  else if(banner==="aware") z.innerHTML=`<div class="app-banner b-aware"><div class="b-badge">DID YOU KNOW</div><div class="b-title">F&amp;O: A smarter way to trade</div><div class="b-body">Trade index movements with less capital using Futures &amp; Options.</div><button class="b-cta" onclick="simFeedback('clicked')">Explore F&amp;O</button></div>`;
+  else z.innerHTML=`<div class="no-banner">No F&amp;O banner shown — policy or guardrail applied.</div>`;
+}
+
+// ═══════════════════════════════════════
+// RENDER DECISION PANEL
+// ═══════════════════════════════════════
+function renderDecision(u,d){
+  const sc=u.score,col=scoreColor(sc),f=u.features;
+  const bands=[
+    {low:0,high:5,label:"<5%",c:"#dc2626",bg:"#fee2e2"},
+    {low:5,high:20,label:"5–20%",c:"#d97706",bg:"#fef3c7"},
+    {low:20,high:30,label:"20–30%",c:"#2563eb",bg:"#dbeafe"},
+    {low:30,high:101,label:"≥30%",c:"#7c3aed",bg:"#ede9fe"},
+  ];
+  const policies=[
+    {l:"Contact policy — max 1 banner per session",p:true},
+    {l:"Compliance block check (KYC status)",p:!u.blocked},
+    {l:"VHP guardrail — portfolio > ₹40L",p:!u.vhp},
+    {l:"Score floor — score ≥ 5% to show anything",p:sc>=5},
+  ];
+
+  const objFeats=[
+    ["login_freq_15d","Login frequency / 15d",f.login_freq_15d,"sessions"],
+    ["fno_page_visits_7d","F&O page visits / 7d",f.fno_page_visits_7d,"visits"],
+    ["equity_trades_30d","Equity trades / 30d",f.equity_trades_30d,"trades"],
+    ["options_chain_views","Options chain views",f.options_chain_views,"views"],
+    ["watchlist_adds_7d","Watchlist adds / 7d",f.watchlist_adds_7d,"adds"],
+    ["search_fno_terms","F&O search queries",f.search_fno_terms,"queries"],
+    ["app_sessions_7d","App sessions / 7d",f.app_sessions_7d,"sessions"],
+    ["avg_session_min","Avg session duration",f.avg_session_min,"min"],
+  ];
+  const profFeats=[
+    ["portfolio_value","Portfolio value","₹"+f.portfolio_value.toLocaleString("en-IN")],
+    ["account_age_yrs","Account age",f.account_age_yrs+" yrs"],
+    ["risk_profile","Risk profile",f.risk_profile],
+    ["kyc_status","KYC status",f.kyc_status],
+    ["segment","User segment",f.segment],
+    ["is_new_user","New user",f.is_new_user?"Yes":"No"],
+  ];
+
+  const prevFb=sessionFeedback[u.id];
+
+  document.getElementById("dp-uid").textContent=u.id;
+  document.getElementById("dp-body").innerHTML=`
+    <div class="user-row">
+      <div class="avatar" style="background:${u.ab};color:${u.ac};">${u.initials}</div>
+      <div>
+        <div class="u-name">${u.name}</div>
+        <div class="u-id">${u.id}</div>
+        <div class="u-seg">${u.seg} · ${u.tenure} yrs tenure</div>
+      </div>
+    </div>
+
+    <div class="sec-title">F&O readiness score — Redis feature store</div>
+    <div class="score-row">
+      <div class="score-big" style="color:${col};">${sc}</div>
+      <div class="score-pct">%</div>
+      <div class="score-ctx">predicted conversion probability</div>
+    </div>
+    <div class="score-track"><div class="score-fill" style="width:${sc}%;background:${col};"></div></div>
+    <div class="bands">
+      ${bands.map(b=>{const on=sc>=b.low&&sc<b.high;return`<div class="band${on?" on":""}" style="${on?`background:${b.bg};color:${b.c};`:`color:var(--g300);`}">${b.label}</div>`}).join("")}
+    </div>
+
+    <div class="feat-wrap">
+      <div class="feat-group-title">Behavioural &amp; clickstream features (objective)</div>
+      <div class="feat-grid">
+        ${objFeats.map(([k,label,val,unit])=>`<div class="feat-chip"><div class="fc-k">${label}</div><div class="fc-v num">${val} <span style="font-size:10px;color:var(--g400);font-family:var(--font);">${unit}</span></div></div>`).join("")}
+      </div>
+      <div class="feat-group-title">Profile &amp; account features</div>
+      <div class="feat-grid">
+        ${profFeats.map(([k,label,val])=>`<div class="feat-chip"><div class="fc-k">${label}</div><div class="fc-v">${val}</div></div>`).join("")}
+      </div>
+    </div>
+
+    <div class="sec-title">Contact policies &amp; guardrails</div>
+    <div class="policy-list">
+      ${policies.map(p=>`<div class="p-row"><div class="p-ico ${p.p?"ppass":"pfail"}">${p.p?"✓":"✗"}</div><span>${p.l}</span></div>`).join("")}
+    </div>
+
+    <div class="sec-title">NBA decision</div>
+    <div class="d-box" style="background:${d.dc.bg};border-color:${d.dc.border};">
+      <div class="d-eyebrow" style="color:${d.dc.text};">Triggered action</div>
+      <div class="d-action" style="color:${d.dc.text};">${d.label}</div>
+      <div class="d-tier" style="color:${d.dc.text};">${d.tier}</div>
+    </div>
+
+    <div class="sec-title">Model reasoning</div>
+    <div class="reasoning">${getReasoningText(u,d)}</div>
+
+    ${d.banner ? `
+    <div class="sec-title">Simulated user response (feedback capture)</div>
+    <div class="fb-section">
+      <div class="fb-row">
+        <button class="fb-btn${prevFb==="clicked"?" fb-active-clicked":""}" id="fb-clicked" onclick="simFeedback('clicked')">👆 User clicked CTA</button>
+        <button class="fb-btn${prevFb==="ignored"?" fb-active-ignored":""}" id="fb-ignored" onclick="simFeedback('ignored')">👀 User ignored banner</button>
+      </div>
+    </div>` : `<div style="margin-bottom:14px;"></div>`}
+
+    <button class="next-btn" onclick="nextUser()"><span>Next user session (random)</span><span>→</span></button>
+  `;
+}
+
+function getReasoningText(u,d){
+  const f=u.features;
+  if(d.action==="BLOCK") return`KYC status is "${f.kyc_status}" — compliance hard block prevents all marketing communications. Score of ${u.score}% is irrelevant while the compliance flag is active.`;
+  if(d.action==="RM_OUTREACH") return`Portfolio value of ₹${u.pv.toLocaleString("en-IN")} exceeds the ₹40L VHP threshold. High-net-worth clients receive dedicated Relationship Manager outreach for F&O onboarding, not mass push banners.`;
+  if(d.action==="SHOW_FNO_BANNER") return`Strong conversion signals: ${f.fno_page_visits_7d} F&O page visits/week, ${f.equity_trades_30d} equity trades last 30d, ${f.login_freq_15d} logins/15d, and ${f.options_chain_views} options chain views. ${f.risk_profile} risk profile confirms intent. Direct F&O registration CTA is the optimal next action.`;
+  if(d.action==="SHOW_EDU_BANNER") return`Moderate engagement with ${f.fno_page_visits_7d} F&O visits and ${f.equity_trades_30d} equity trades suggests interest but not readiness. Education banner builds knowledge bridge. ${f.is_new_user?"New user — education reduces dropout risk.":""}`;
+  if(d.action==="SHOW_AWARE_BANNER") return`Low F&O engagement (${f.fno_page_visits_7d} page visits, ${f.login_freq_15d} logins/15d). Score of ${u.score}% indicates early-awareness stage. A soft nudge keeps F&O visible without creating friction for an unready user.`;
+  return`Score of ${u.score}% is below the 5% action threshold. Zero F&O intent signals detected (${f.fno_page_visits_7d} visits, ${f.options_chain_views} options views). No action prevents a poor experience for a disengaged user.`;
+}
+
+// ═══════════════════════════════════════
+// FEEDBACK
+// ═══════════════════════════════════════
+function simFeedback(type){
+  if(!currentUser) return;
+  const u=currentUser;
+  const wasNew=!sessionFeedback[u.id];
+  sessionFeedback[u.id]=type;
+  if(type==="clicked"&&wasNew){stats.clicks++;updateStats();}
+  if(type==="ignored"&&wasNew){stats.ignored++;updateStats();}
+  const fc=document.getElementById("fb-clicked");
+  const fi=document.getElementById("fb-ignored");
+  if(fc) fc.className="fb-btn"+(type==="clicked"?" fb-active-clicked":"");
+  if(fi) fi.className="fb-btn"+(type==="ignored"?" fb-active-ignored":"");
+  // update log + table
+  const ev=allEvents.find(e=>e.userId===u.id&&e.feedback==="pending");
+  if(ev){ev.feedback=type;renderLog();renderTable();}
+}
+
+// ═══════════════════════════════════════
+// LOG
+// ═══════════════════════════════════════
+function addEvent(u,d){
+  const now=new Date();
+  const t=now.toLocaleTimeString("en-IN",{hour12:false});
+  const ev={
+    seq:allEvents.length+1,userId:u.id,name:u.name,segment:u.seg,
+    score:u.score,action:d.action,label:d.label,
+    feedback:d.banner?"pending":"n/a",time:t,
+    f:u.features,pv:u.pv,blocked:u.blocked,vhp:u.vhp,
+  };
+  allEvents.unshift(ev);
+  document.getElementById("data-count-badge").textContent=allEvents.length;
+  renderLog();
+  renderTable();
+}
+
+function renderLog(){
+  document.getElementById("log-count").textContent=allEvents.length+" events";
+  if(!allEvents.length){document.getElementById("log-body").innerHTML=`<div class="log-empty">No events yet</div>`;return;}
+  document.getElementById("log-body").innerHTML=allEvents.slice(0,40).map(e=>`
+    <div class="log-entry">
+      <div class="log-dot" style="background:${actionDot[e.action]||'#9ca3af'};"></div>
+      <div class="log-content">
+        <div class="log-user">${e.name}</div>
+        <div class="log-action">${e.label}</div>
+        ${e.feedback&&e.feedback!=="pending"&&e.feedback!=="n/a"?`<span class="log-fb fb-t-${e.feedback}">${e.feedback==="clicked"?"CTA clicked":"Ignored"}</span>`:""}
+        ${e.feedback==="pending"?`<span class="log-fb" style="background:var(--g100);color:var(--g400);">awaiting feedback</span>`:""}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+        <div class="log-score-badge" style="background:${scoreColor(e.score)}18;color:${scoreColor(e.score)};">${e.score}%</div>
+        <div class="log-time">${e.time}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+// ═══════════════════════════════════════
+// USER LIST
+// ═══════════════════════════════════════
+function renderUserList(){
+  const badgeMap={
+    SHOW_FNO_BANNER:{label:"F&O Banner",bg:"#ede9fe",c:"#4c1d95"},
+    SHOW_EDU_BANNER:{label:"Edu Banner",bg:"#dbeafe",c:"#1e3a8a"},
+    SHOW_AWARE_BANNER:{label:"Aware",bg:"#fef3c7",c:"#78350f"},
+    NO_ACTION:{label:"No Action",bg:"#f3f4f6",c:"#6b7280"},
+    BLOCK:{label:"Blocked",bg:"#fee2e2",c:"#9f1239"},
+    RM_OUTREACH:{label:"RM Route",bg:"#fff7ed",c:"#9a3412"},
+  };
+  document.getElementById("user-list").innerHTML=[
+    ...SAMPLE_USERS.map((u,i)=>{
+      const d=decide(u),b=badgeMap[d.action];
+      const isAct=currentUser&&currentUser.id===u.id;
+      return`<div class="us-item${isAct?" active":""}" onclick="loadUser(SAMPLE_USERS[${i}])">
+        <div class="us-av" style="background:${u.ab};color:${u.ac};">${u.initials}</div>
+        <div><div class="us-name">${u.name}</div><div class="us-sc">Score: <strong style="color:${scoreColor(u.score)};">${u.score}%</strong> · ${u.seg}</div></div>
+        <div class="us-badge" style="background:${b.bg};color:${b.c};">${b.label}</div>
+      </div>`;
+    }),
+    `<div style="padding:8px 9px 4px;"><button onclick="nextUser()" style="width:100%;padding:9px;background:var(--g900);color:#fff;border:none;border-radius:var(--r6);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;">
+      <span>🎲</span><span>Load next random user</span>
+    </button></div>`
+  ].join("");
+}
+
+// ═══════════════════════════════════════
+// LOAD USER
+// ═══════════════════════════════════════
+function loadUser(u){
+  currentUser=u;
+  const d=decide(u);
+  stats.processed++;
+  if(d.banner) stats.banners++;
+  if(!d.banner&&(u.blocked||u.vhp)) stats.blocked++;
+  updateStats();
+  setStatus("scoring");
+  renderUserList();
+  document.getElementById("pf-val").innerHTML="₹"+u.pv.toLocaleString("en-IN");
+  document.getElementById("pf-chg").textContent=u.pv>100000?"+₹"+Math.round(u.pv*0.013).toLocaleString("en-IN")+" (1.3%) today":"−₹"+Math.round(u.pv*0.006).toLocaleString("en-IN")+" (0.6%) today";
+  document.getElementById("pf-chg").className="pf-chg "+(u.pv>100000?"up":"dn");
+  document.getElementById("banner-zone").innerHTML=`<div class="b-loading">Fetching score from Redis & evaluating guardrails...</div>`;
+  document.getElementById("dp-uid").textContent="...";
+  document.getElementById("dp-body").innerHTML=`<div class="dp-empty">Orchestrator running for ${u.name}...</div>`;
+  setTimeout(()=>{
+    renderBanner(d.banner);
+    renderDecision(u,d);
+    setStatus("ready");
+    if(sessionFeedback[u.id]){
+      const prev=sessionFeedback[u.id];
+      const fc=document.getElementById("fb-clicked");
+      const fi=document.getElementById("fb-ignored");
+      if(fc) fc.className="fb-btn"+(prev==="clicked"?" fb-active-clicked":"");
+      if(fi) fi.className="fb-btn"+(prev==="ignored"?" fb-active-ignored":"");
+    }
+    addEvent(u,d);
+  },850);
+}
+
+function nextUser(){loadUser(randomUser());}
+
+// ═══════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════
+function updateStats(){
+  document.getElementById("s-processed").textContent=stats.processed;
+  document.getElementById("s-banners").textContent=stats.banners;
+  document.getElementById("s-blocked").textContent=stats.blocked;
+  document.getElementById("s-clicks").textContent=stats.clicks;
+  const total=stats.clicks+stats.ignored;
+  document.getElementById("s-ignrate").textContent=total>0?Math.round(stats.ignored/total*100)+"%":"—";
+}
+
+function setStatus(s){
+  const el=document.getElementById("global-status");
+  el.className="status-pill s-"+s;
+  document.getElementById("status-text").textContent={scoring:"Scoring...",ready:"Decision ready",idle:"Idle"}[s];
+}
+
+// ═══════════════════════════════════════
+// NAV TABS
+// ═══════════════════════════════════════
+function switchTab(name,el){
+  document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+  el.classList.add("active");
+  if(name==="data") renderTable();
+}
+
+// ═══════════════════════════════════════
+// DATA TABLE
+// ═══════════════════════════════════════
+function getFilteredData(){
+  const q=(document.getElementById("tbl-search").value||"").toLowerCase();
+  const af=document.getElementById("tbl-action-filter").value;
+  const ff=document.getElementById("tbl-fb-filter").value;
+  let data=[...allEvents];
+  if(q) data=data.filter(e=>e.name.toLowerCase().includes(q)||e.action.toLowerCase().includes(q)||(e.feedback||"").includes(q)||e.userId.toLowerCase().includes(q)||e.segment.toLowerCase().includes(q));
+  if(af) data=data.filter(e=>e.action===af);
+  if(ff) data=data.filter(e=>e.feedback===ff);
+  data.sort((a,b)=>{
+    let va=a[sortCol],vb=b[sortCol];
+    if(typeof va==="string") va=va.toLowerCase(),vb=vb.toLowerCase();
+    if(va<vb) return sortDir==="asc"?-1:1;
+    if(va>vb) return sortDir==="asc"?1:-1;
+    return 0;
+  });
+  return data;
+}
+
+function renderTable(){
+  const data=getFilteredData();
+  const total=data.length;
+  const pages=Math.max(1,Math.ceil(total/PAGE_SIZE));
+  if(currentPage>pages) currentPage=pages;
+  const slice=data.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);
+
+  const actionBadge={
+    SHOW_FNO_BANNER:`<span class="badge-pill" style="background:#ede9fe;color:#4c1d95;">F&O Banner</span>`,
+    SHOW_EDU_BANNER:`<span class="badge-pill" style="background:#dbeafe;color:#1e3a8a;">Edu Banner</span>`,
+    SHOW_AWARE_BANNER:`<span class="badge-pill" style="background:#fef3c7;color:#78350f;">Awareness</span>`,
+    NO_ACTION:`<span class="badge-pill" style="background:#f3f4f6;color:#4b5563;">No Action</span>`,
+    BLOCK:`<span class="badge-pill" style="background:#fee2e2;color:#9f1239;">Blocked</span>`,
+    RM_OUTREACH:`<span class="badge-pill" style="background:#fff7ed;color:#9a3412;">RM Route</span>`,
+  };
+  const fbBadge={
+    clicked:`<span class="badge-pill" style="background:#dcfce7;color:#14532d;">Clicked</span>`,
+    ignored:`<span class="badge-pill" style="background:#fef3c7;color:#78350f;">Ignored</span>`,
+    pending:`<span class="badge-pill" style="background:#f3f4f6;color:#6b7280;">Pending</span>`,
+    "n/a":`<span class="badge-pill" style="background:#f3f4f6;color:#9ca3af;">N/A</span>`,
+  };
+
+  if(!slice.length){
+    document.getElementById("tbl-body").innerHTML=`<tr><td colspan="17" class="table-empty">${allEvents.length===0?"No data yet — run some sessions first":"No results match your filters"}</td></tr>`;
+    document.getElementById("pagination").style.display="none";
+    return;
+  }
+
+  document.getElementById("tbl-body").innerHTML=slice.map(e=>`
+    <tr>
+      <td class="mono">#${e.seq}</td>
+      <td><strong>${e.name}</strong></td>
+      <td class="mono">${e.userId}</td>
+      <td>${e.segment}</td>
+      <td><strong style="color:${scoreColor(e.score)};">${e.score}%</strong></td>
+      <td class="mono">${e.f.login_freq_15d}</td>
+      <td class="mono">${e.f.fno_page_visits_7d}</td>
+      <td class="mono">${e.f.equity_trades_30d}</td>
+      <td class="mono">${e.f.options_chain_views}</td>
+      <td class="mono">₹${e.pv.toLocaleString("en-IN")}</td>
+      <td class="mono">${e.f.account_age_yrs}</td>
+      <td>${e.f.risk_profile}</td>
+      <td>${e.blocked?'<span class="badge-pill" style="background:#fee2e2;color:#9f1239;">Blocked</span>':'<span class="badge-pill" style="background:#dcfce7;color:#14532d;">Clear</span>'}</td>
+      <td>${e.vhp?'<span class="badge-pill" style="background:#fff7ed;color:#9a3412;">VHP</span>':'—'}</td>
+      <td>${actionBadge[e.action]||e.action}</td>
+      <td>${fbBadge[e.feedback]||e.feedback}</td>
+      <td class="mono">${e.time}</td>
+    </tr>
+  `).join("");
+
+  document.getElementById("pg-info").textContent=`Showing ${(currentPage-1)*PAGE_SIZE+1}–${Math.min(currentPage*PAGE_SIZE,total)} of ${total} records`;
+  const pgBtns=document.getElementById("pg-btns");
+  pgBtns.innerHTML=`
+    <button class="pg-btn" onclick="goPage(${currentPage-1})" ${currentPage<=1?"disabled":""}>← Prev</button>
+    ${Array.from({length:Math.min(pages,7)},(_,i)=>{
+      const p=i+1;
+      return`<button class="pg-btn${p===currentPage?" active":""}" onclick="goPage(${p})">${p}</button>`;
+    }).join("")}
+    <button class="pg-btn" onclick="goPage(${currentPage+1})" ${currentPage>=pages?"disabled":""}>Next →</button>
+  `;
+  document.getElementById("pagination").style.display="flex";
+}
+
+function goPage(p){currentPage=p;renderTable();}
+function sortTable(col){
+  if(sortCol===col) sortDir=sortDir==="asc"?"desc":"asc";
+  else{sortCol=col;sortDir="asc";}
+  currentPage=1;
+  document.querySelectorAll(".data-table th").forEach(th=>{th.classList.remove("sorted");});
+  renderTable();
+}
+
+// ═══════════════════════════════════════
+// EXCEL DOWNLOAD
+// ═══════════════════════════════════════
+function downloadExcel(){
+  if(!allEvents.length){alert("No data yet — run some sessions first.");return;}
+  const headers=["Event #","User ID","Name","Segment","F&O Score (%)","Login Freq (15d)","F&O Page Visits (7d)","Equity Trades (30d)","Options Chain Views","Watchlist Adds (7d)","FNO Search Queries","App Sessions (7d)","Avg Session (min)","Portfolio Value (INR)","Account Age (yrs)","Risk Profile","KYC Status","New User","Compliance Blocked","VHP Flag","Action","Action Label","Feedback","Timestamp"];
+  const rows=allEvents.map(e=>[
+    e.seq,e.userId,e.name,e.segment,e.score,
+    e.f.login_freq_15d,e.f.fno_page_visits_7d,e.f.equity_trades_30d,e.f.options_chain_views,
+    e.f.watchlist_adds_7d,e.f.search_fno_terms,e.f.app_sessions_7d,e.f.avg_session_min,
+    e.pv,e.f.account_age_yrs,e.f.risk_profile,e.f.kyc_status,
+    e.f.is_new_user?"Yes":"No",e.blocked?"Yes":"No",e.vhp?"Yes":"No",
+    e.action,e.label,e.feedback,e.time
+  ]);
+
+  // Build CSV with BOM for Excel UTF-8
+  const bom="\uFEFF";
+  const esc=v=>{
+    const s=String(v==null?"":v);
+    if(s.includes(",")||s.includes('"')||s.includes('\n')) return'"'+s.replace(/"/g,'""')+'"';
+    return s;
+  };
+  const csv=bom+[headers,...rows].map(r=>r.map(esc).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="AngelOne_FnO_NBA_FeedbackData_"+new Date().toISOString().slice(0,10)+".csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+renderUserList();
+</script>
+</body>
+</html>
